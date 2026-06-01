@@ -29,7 +29,6 @@
             font-family: 'Rajdhani', sans-serif;
         }
 
-        /* Scrollbar Cyberpunk */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -45,7 +44,6 @@
             background: var(--neon-green);
         }
 
-        /* Glow Efeitos Extraordinários */
         .neon-border {
             border: 1px solid var(--border-color);
             transition: all 0.3s ease;
@@ -66,7 +64,6 @@
             border-radius: 12px;
         }
 
-        /* Custom Pulse Marker para o GPS */
         .gps-pulse-icon {
             background: var(--neon-green);
             border-radius: 50%;
@@ -117,7 +114,6 @@
     </header>
 
     <main class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
         <section class="lg:grid-cols-1 lg:col-span-5 flex flex-col gap-4">
             <div class="bg-[#161b22] p-4 rounded-xl border border-[#21262d]">
                 <h2 class="brand-font text-xl font-semibold text-white mb-4 tracking-wide flex justify-between items-center">
@@ -162,7 +158,6 @@
         let map, currentMarker, stompClient = null;
         let activeTrackingId = null;
 
-        // 1. Inicialização do Mapa com Skin Dark/Cyber
         function initMap() {
             map = L.map('map').setView([-23.45, -46.73], 12);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -172,12 +167,9 @@
             }).addTo(map);
         }
 
-        // Recupera o token do LocalStorage ou do campo de input da tela
         function obterTokenAutenticacao() {
             const inputToken = document.getElementById("jwt-input").value.trim();
             if (inputToken) return inputToken;
-            
-            // Tenta resgatar o token que o app ou login web salvou por padrão
             return localStorage.getItem("token") || localStorage.getItem("jwt") || "";
         }
 
@@ -187,14 +179,13 @@
                 localStorage.setItem("token", valor.trim());
                 statusLabel.innerText = "JWT INJETADO";
                 statusLabel.className = "text-[#3DDC84] font-bold";
-                carregarSolicitacoes(); // Auto-recarrega os dados
+                carregarSolicitacoes();
             } else {
                 statusLabel.innerText = "JWT AUSENTE";
                 statusLabel.className = "text-red-400 font-bold";
             }
         }
 
-        // 2. Carregar e Renderizar os Dados COM TOKENS NO CABEÇALHO
         async function carregarSolicitacoes() {
             const token = obterTokenAutenticacao();
             const container = document.getElementById("lista-solicitacoes");
@@ -203,13 +194,12 @@
                 container.innerHTML = `
                     <div class="text-center py-8 px-4 border border-dashed border-red-500/30 rounded-lg bg-red-500/5">
                         <p class="text-xs text-red-400 font-bold uppercase mb-2">Acesso Negado pelo Backend (Erro 401)</p>
-                        <p class="text-[11px] text-gray-400">Por favor, cole o token gerado pelo login no campo de autenticação no topo superior direito da tela.</p>
+                        <p class="text-[11px] text-gray-400">Por favor, cole o token gerado pelo login no campo de autenticação.</p>
                     </div>`;
                 return;
             }
 
             try {
-                // 🚀 ADICIONADO: Configuração dos headers com o Bearer Token necessário
                 const response = await fetch(`${API_BASE_URL}/api/solicitacoes`, {
                     method: "GET",
                     headers: {
@@ -218,10 +208,7 @@
                     }
                 });
                 
-                if (response.status === 401 || response.status === 403) {
-                    throw new Error("TOKEN_INVALIDO");
-                }
-                
+                if (response.status === 401 || response.status === 403) throw new Error("TOKEN_INVALIDO");
                 if (!response.ok) throw new Error("ERRO_DE_REDE");
                 
                 const ordens = await response.json();
@@ -235,23 +222,32 @@
                 let pendentes = 0, emAndamento = 0;
 
                 ordens.forEach(ordem => {
-                    if (ordem.status === 'PENDENTE') pendentes++;
-                    if (ordem.status === 'ACEITO' || ordem.status === 'EM_ANDAMENTO') emAndamento++;
+                    const statusOS = (ordem.status || "").toUpperCase();
+                    if (statusOS === 'PENDENTE') pendentes++;
+                    if (statusOS === 'ACEITO' || statusOS === 'EM_ANDAMENTO' || statusOS === 'ACEITA') emAndamento++;
 
                     const descricaoServico = ordem.servico ? ordem.servico.nome : (ordem.descricao || "Serviço Geral de Dedetização");
                     const nomeCliente = ordem.cliente ? ordem.cliente.nome : "Cliente Não Informado";
+                    const clienteId = ordem.cliente ? ordem.cliente.id : null;
                     const dataAgendada = ordem.dataAgendamento || "Data flexível";
 
-                    let statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">PENDENTE</span>`;
-                    let trackingBtn = '';
+                    let statusBadge = '';
+                    let acaoBtn = '';
 
-                    if (ordem.status === 'ACEITO' || ordem.status === 'EM_ANDAMENTO') {
+                    if (statusOS === 'PENDENTE') {
+                        statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">PENDENTE</span>`;
+                        if (clienteId) {
+                            acaoBtn = `
+                                <button onclick="aceitarOrdemEmpresa(${clienteId}, ${ordem.id})" class="mt-3 w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold text-xs py-1.5 px-3 rounded transition flex items-center justify-center gap-1">
+                                    🤝 ACEITAR SOLICITAÇÃO
+                                </button>`;
+                        }
+                    } else {
                         statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-[#3DDC84]/10 text-[#3DDC84] border border-[#3DDC84]/20">EM CAMPO</span>`;
-                        trackingBtn = `
+                        acaoBtn = `
                             <button onclick="conectarRastreamento(${ordem.id})" class="mt-3 w-full bg-[#3DDC84] hover:bg-[#2eb369] text-black font-bold text-xs py-1.5 px-3 rounded transition flex items-center justify-center gap-1">
                                 🛰️ RASTREAR EM TEMPO REAL
-                            </button>
-                        `;
+                            </button>`;
                     }
 
                     const card = document.createElement("div");
@@ -265,7 +261,7 @@
                         <h3 class="text-white font-bold text-sm tracking-wide uppercase">${descricaoServico}</h3>
                         <p class="text-xs text-gray-400 mt-1"><b class="text-gray-500">Cliente:</b> ${nomeCliente}</p>
                         <p class="text-xs text-gray-400 mt-0.5"><b class="text-gray-500">Agenda:</b> ${dataAgendada}</p>
-                        ${trackingBtn}
+                        ${acaoBtn}
                     `;
                     container.appendChild(card);
                 });
@@ -279,7 +275,7 @@
                     container.innerHTML = `
                         <div class="text-center py-8 px-4 border border-dashed border-red-500/30 rounded-lg bg-red-500/5">
                             <p class="text-xs text-red-400 font-bold uppercase mb-2">Sessão Expirada ou Token Inválido</p>
-                            <p class="text-[11px] text-gray-400">O backend recusou a chave. Atualize com um novo Token JWT válido.</p>
+                            <p class="text-[11px] text-gray-400">Atualize com um novo Token JWT válido.</p>
                         </div>`;
                 } else {
                     container.innerHTML = `<p class="text-sm text-red-400 text-center py-6">Falha crítica ao conectar com a API Render.</p>`;
@@ -287,7 +283,32 @@
             }
         }
 
-        // 3. Conexão Dinâmica ao Pipeline do WebSocket para GPS
+        // 🔥 FLUXO DE ACEITAÇÃO REAL-TIME (CHAMA O NOTIFICATION CONTROLLER)
+        async function aceitarOrdemEmpresa(clienteId, ordemId) {
+            const token = obterTokenAutenticacao();
+            if(!confirm(`Deseja aceitar a Ordem de Serviço #${ordemId} e notificar o cliente?`)) return;
+
+            logTerminal(`Enviando comando de aceitação para OS #${ordemId}...`);
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/notifications/trigger-acceptance?clienteId=${clienteId}&ordemId=${ordemId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) throw new Error("Erro na requisição de aceitação");
+                
+                logTerminal(`Sucesso! OS #${ordemId} ativa. Disparo STOMP/FCM injetado.`);
+                alert(`Ordem #${ordemId} aceita com sucesso! Cliente notificado.`);
+                carregarSolicitacoes();
+            } catch (error) {
+                console.error(error);
+                alert("Falha ao processar aceitação da Ordem.");
+            }
+        }
+
         function conectarRastreamento(idOrdem) {
             if (activeTrackingId) {
                 document.getElementById(`card-os-${activeTrackingId}`)?.classList.remove('active');
@@ -311,15 +332,13 @@
             document.getElementById("ws-status").innerText = "CONECTANDO...";
             document.getElementById("ws-status").className = "text-yellow-500 font-bold";
 
-            const socket = new SockJS(`${API_BASE_URL}/ws/websocket`);
+            // 🚀 ALINHADO: Endpoint correto configurado no seu WebSocketConfig.java do Spring
+            const socket = new SockJS(`${API_BASE_URL}/ws-pestcontrol-sockjs`);
             stompClient = Stomp.over(socket);
             stompClient.debug = null;
 
-            // 🚀 PASSANDO O TOKEN TAMBÉM NOS HEADERS DE CONEXÃO DO STOMP (MUITO IMPORTANTE!)
             const token = obterTokenAutenticacao();
-            const headers = {
-                "Authorization": `Bearer ${token}`
-            };
+            const headers = { "Authorization": `Bearer ${token}` };
 
             stompClient.connect(headers, function (frame) {
                 document.getElementById("ws-status").innerText = "SINAL ATIVO";
@@ -369,11 +388,8 @@
             logBox.insertBefore(logItem, logBox.firstChild);
         }
 
-        // Inicialização automática verificando tokens pré-existentes
         window.onload = () => {
             initMap();
-            
-            // Verifica se já existe token salvo de telas de login passadas
             const tokenSalvo = localStorage.getItem("token") || localStorage.getItem("jwt");
             if (tokenSalvo) {
                 document.getElementById("jwt-input").value = tokenSalvo;
@@ -381,7 +397,6 @@
                 statusLabel.innerText = "JWT RESTAURADO";
                 statusLabel.className = "text-[#3DDC84] font-bold";
             }
-            
             carregarSolicitacoes();
             setInterval(carregarSolicitacoes, 30000);
         };

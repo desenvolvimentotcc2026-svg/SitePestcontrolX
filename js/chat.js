@@ -1,23 +1,31 @@
 var stompClient = null;
-// 🛠️ CORREÇÃO PRINCIPAL: Rota correta mapeada para SockJS usando HTTPS
-const RENDER_URL = 'https://appdedetizacao.onrender.com/ws-pestcontrol-sockjs'; 
+const BACKEND_BASE = 'https://appdedetizacao.onrender.com';
+const RENDER_URL = `${BACKEND_BASE}/ws-pestcontrol-sockjs`; 
 
-// Chaves unificadas para evitar falhas de leitura
+// Captura unificada de chaves no localStorage
 const tokenAuth = localStorage.getItem("tokenJWT") || localStorage.getItem("token") || localStorage.getItem("token_usuario") || localStorage.getItem("TOKEN_AUTH");
 const empresaId = localStorage.getItem("empresaId") || localStorage.getItem("usuario_id") || 1; 
 const clienteId = localStorage.getItem("clienteId") || 1; 
 
 document.addEventListener("DOMContentLoaded", () => {
     const campoTexto = document.getElementById('msg');
+    const btnTransmitir = document.getElementById('btn-transmitir');
+
     if (campoTexto) {
         campoTexto.addEventListener("keypress", (e) => {
             if (e.key === "Enter") enviar();
         });
     }
+
+    if (btnTransmitir) {
+        btnTransmitir.addEventListener("click", () => {
+            enviar();
+        });
+    }
     
-    if(!tokenAuth) {
-        atualizarStatusInterface("ERRO: TOKEN AUSENTE", "#DC3545");
-        console.error("Impossível conectar WebSocket sem Token JWT.");
+    if (!tokenAuth) {
+        atualizarStatusInterface("ERRO: TOKEN JWT AUSENTE", "#DC3545");
+        console.error("Impossível conectar WebSocket sem Token JWT mapeado.");
         return;
     }
 
@@ -25,19 +33,41 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function atualizarStatusInterface(texto, corHex) {
-    let el = document.getElementById('status-chat') || document.querySelector('.status-chat');
-    if (!el) {
-        const elementos = document.querySelectorAll('div, span, button, p');
-        for (let item of elementos) {
-            if (item.innerText && (item.innerText.includes("SISTEMA") || item.innerText.includes("Conectando") || item.innerText.includes("BARRAMENTO"))) {
-                el = item; break;
-            }
-        }
-    }
+    let el = document.getElementById('status-chat');
     if (el) {
-        el.innerText = texto;
+        el.innerText = `> ${texto}`;
         el.style.color = corHex;
     }
+}
+
+function carregarHistoricoNoTerminal() {
+    const win = document.getElementById('chat-window');
+    if (!win) return;
+
+    // Consome a rota mapeada no ChatController.java
+    fetch(`${BACKEND_BASE}/api/chat/historico/${empresaId}/${clienteId}`, {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + tokenAuth,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) throw new Error("Falha ao recuperar histórico");
+        return response.json();
+    })
+    .then(mensagens => {
+        mensagens.forEach(dados => {
+            let cor = dados.remetente === 'EMPRESA' ? '#3DDC84' : '#00ffff'; 
+            win.innerHTML += `<p class="msg-line" style="font-family: sans-serif;"><span style="color: ${cor}; font-weight: bold;">[${dados.remetente}]</span>: ${dados.texto || dados.conteudo}</p>`;
+        });
+        win.innerHTML += `<p class="status-log">>> [SISTEMA] Histórico carregado com sucesso. Sincronizado em tempo real.</p>`;
+        win.scrollTop = win.scrollHeight;
+    })
+    .catch(err => {
+        console.error("Erro carregando histórico:", err);
+        win.innerHTML += `<p class="status-log" style="color: #ff3333;">>> [ALERTA] Não foi possível carregar o histórico de mensagens antigas.</p>`;
+    });
 }
 
 function tocarSomNotificacao() {
@@ -55,35 +85,39 @@ function tocarSomNotificacao() {
 }
 
 function conectar() {
-    atualizarStatusInterface("AUTENTICANDO...", "#ffaa00");
+    atualizarStatusInterface("AUTENTICANDO NO BARRAMENTO...", "#ffaa00");
     var socket = new SockJS(RENDER_URL);
     stompClient = Stomp.over(socket);
-    stompClient.debug = null; 
+    stompClient.debug = null; // Remove logs poluídos no console do navegador
 
     const headers = {
         'Authorization': 'Bearer ' + tokenAuth
     };
 
     stompClient.connect(headers, function (frame) {
-        console.log('Conectado de forma segura ao Servidor STOMP');
-        atualizarStatusInterface("BARRAMENTO ONLINE", "#3DDC84");
+        console.log('Conectado com sucesso ao servidor STOMP');
+        atualizarStatusInterface("BARRAMENTO ONLINE - CONEXÃO SEGURA", "#3DDC84");
+        
+        // Limpa avisos iniciais e carrega histórico
+        document.getElementById('chat-window').innerHTML = '';
+        carregarHistoricoNoTerminal();
         
         const topicoDinamico = `/topic/chat/${empresaId}/${clienteId}`;
         
         stompClient.subscribe(topicoDinamico, function (msg) {
             var dados = JSON.parse(msg.body);
-            var chat = document.getElementById('chat');
+            var chat = document.getElementById('chat-window');
             if (!chat) return;
 
             let cor = dados.remetente === 'EMPRESA' ? '#3DDC84' : '#00ffff'; 
-            chat.innerHTML += `<p style="margin: 6px 0; font-family: sans-serif;"><span style="color: ${cor}; font-weight: bold;">[${dados.remetente}]</span>: ${dados.texto || dados.conteudo}</p>`;
+            chat.innerHTML += `<p class="msg-line" style="font-family: sans-serif;"><span style="color: ${cor}; font-weight: bold;">[${dados.remetente}]</span>: ${dados.texto || dados.conteudo}</p>`;
             chat.scrollTop = chat.scrollHeight;
 
             if (dados.remetente !== 'EMPRESA') tocarSomNotificacao();
         });
     }, function(error) {
-        console.error('Falha de Segurança/Rede STOMP.', error);
-        atualizarStatusInterface("CONEXÃO RECUSADA", "#ff3333");
+        console.error('Falha na conexão STOMP:', error);
+        atualizarStatusInterface("CONEXÃO RECUSADA - RECONECTANDO EM 10S", "#ff3333");
         setTimeout(conectar, 10000); 
     });
 }
@@ -99,8 +133,8 @@ function enviar() {
             'remetente': 'EMPRESA',
             'texto': textoDigitado,
             'conteudo': textoDigitado,
-            'remetenteId': empresaId,
-            'destinatarioId': clienteId
+            'empresaId': parseInt(empresaId),
+            'clienteId': parseInt(clienteId)
         });
         
         const rotaEnvio = `/app/chat/${empresaId}/${clienteId}`;
