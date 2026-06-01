@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PestControlX - Painel de Acesso</title>
+    <style>
+        :root {
+            --bg-global: #f8fafc;
+            --card-bg: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --brand-green: #16a34a;
+            --brand-green-hover: #15803d;
+            --border-light: #e2e8f0;
+            --input-focus: #bbf7d0;
+        }
+        body {
+            background-color: var(--bg-global);
+            color: var(--text-primary);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .login-wrapper {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            padding: 45px 40px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            box-sizing: border-box;
+        }
+        .brand-header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+        .brand-header img.logo {
+            max-height: 85px;
+            margin-bottom: 16px;
+        }
+        .brand-header h1 {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        .brand-header p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        .form-group {
+            margin-bottom: 22px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 13px 16px;
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            background-color: #fff;
+            color: var(--text-primary);
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--brand-green);
+            box-shadow: 0 0 0 3px var(--input-focus);
+        }
+        .action-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 25px;
+        }
+        .action-row a {
+            color: var(--brand-green);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .action-row a:hover {
+            text-decoration: underline;
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--brand-green);
+            border: none;
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .btn-primary:hover {
+            background-color: var(--brand-green-hover);
+        }
+        .footer-links {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .footer-links a {
+            color: var(--brand-green);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .footer-links a:hover {
+            text-decoration: underline;
+        }
+        .alert-box {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            display: none;
+        }
+        .alert-error { background-color: #fef2f2; border: 1px solid #fee2e2; color: #991b1b; }
+        .alert-success { background-color: #f0fdf4; border: 1px solid #dcfce7; color: #166534; }
+    </style>
+</head>
+<body>
+
+    <div class="login-wrapper">
+        <div class="brand-header">
+            <img src="img/logo2 copy.png" alt="Logo" class="logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2942/2942780.png'">
+            <h1>Aceder ao Painel Corporativo</h1>
+            <p class="subtitle">Insira as suas credenciais de operador</p>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">E-mail Institucional</label>
+                <input type="email" id="email" placeholder="nome@empresa.com" required>
+            </div>
+
+            <div class="form-group">
+                <label for="senha">Palavra-passe</label>
+                <input type="password" id="senha" placeholder="••••••••" required>
+            </div>
+
+            <div class="action-row">
+                <a href="forgot-password.html">Esqueceu-se da senha?</a>
+            </div>
+
+            <button type="submit" class="btn-primary">Entrar no Sistema</button>
+            <div id="alertBox" class="alert-box"></div>
+
+            <div class="footer-links">
+                <p>Novo por aqui? <a href="register.html">Solicitar acesso de terminal</a></p>
+            </div>
+        </form>
+    </div>
+
+  <script>
+        const API_BASE_URL = 'https://appdedetizacao.onrender.com';
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value.trim();
+            const senha = document.getElementById('senha').value;
+            const alertBox = document.getElementById('alertBox');
+            const btnSubmit = e.target.querySelector('button');
+
+            const originalText = btnSubmit.textContent;
+            btnSubmit.textContent = 'Enviando código...';
+            btnSubmit.disabled = true;
+            alertBox.style.display = 'none';
+
+            try {
+                // 🚀 CORREÇÃO: Enviamos o payload completo alinhado com o seu Spring Boot
+                const payload = { 
+                    email: email, 
+                    senha: senha, 
+                    tipoUsuario: "EMPRESA", // Garante o mapeamento do DTO corporativo
+                    tipo: "EMPRESA"         // redundância de segurança caso o campo varie
+                };
+
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                console.log(`📡 Status da Resposta: ${response.status}`);
+
+                if (response.ok) {
+                    alertBox.className = 'alert-box alert-success';
+                    alertBox.textContent = 'Autenticação efetuada! Verifique o código enviado ao seu e-mail...';
+                    alertBox.style.display = 'block';
+                    
+                    // Salva o e-mail para ser usado na tela do token
+                    localStorage.setItem('logging_email', email);
+                    localStorage.setItem('emailTemp', email);
+
+                    setTimeout(() => { 
+                        window.location.href = 'token.html'; 
+                    }, 1500);
+                } else {
+                    // Se falhar, tenta ler a mensagem do servidor de forma segura
+                    let msgErro = 'Credenciais inválidas ou erro no servidor.';
+                    try {
+                        const data = await response.json();
+                        if (data && data.message) msgErro = data.message;
+                    } catch (e) {
+                        // Se o corpo vier vazio ou texto simples, evita crash do JS
+                    }
+
+                    alertBox.className = 'alert-box alert-error';
+                    alertBox.textContent = msgErro;
+                    alertBox.style.display = 'block';
+                    
+                    btnSubmit.textContent = originalText;
+                    btnSubmit.disabled = false;
+                }
+            } catch (err) {
+                // Captura erros de rede ou de CORS no console
+                console.error("🔴 Erro crítico na requisição de login:", err);
+                
+                alertBox.className = 'alert-box alert-error';
+                alertBox.textContent = 'Não foi possível conectar ao servidor. Verifique o console (F12).';
+                alertBox.style.display = 'block';
+                
+                btnSubmit.textContent = originalText;
+                btnSubmit.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

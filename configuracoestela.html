@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3DDC84;
+            --surface: #161B26;
+            --border: #2D3748;
+            --text-main: #FFFFFF;
+            --text-muted: #A0AEC0;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            color: var(--text-main);
+            margin: 0;
+            padding: 25px;
+            background: transparent;
+        }
+        .config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .setting-row:last-child { border-bottom: none; }
+        
+        /* Switch Customizado Premium */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 46px;
+            height: 24px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #2D3748; transition: .3s; border-radius: 24px;
+            border: 1px solid #4A5568;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px;
+            background-color: white; transition: .3s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--primary); border-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(22px); background-color: #000; }
+
+        .tech-select {
+            background: #0F0F12;
+            color: white;
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 6px;
+            outline: none;
+            cursor: pointer;
+        }
+        .btn-danger {
+            background: #EF4444; color: white; border: none; padding: 10px 16px;
+            border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        .btn-danger:hover { background: #DC2626; box-shadow: 0 0 10px rgba(239,68,68,0.4); }
+        
+        .ping-indicator { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: bold;}
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: gray; display: inline-block; }
+        .dot.online { background: #3DDC84; box-shadow: 0 0 8px #3DDC84; }
+        .dot.offline { background: #EF4444; box-shadow: 0 0 8px #EF4444; }
+    </style>
+</head>
+<body>
+    <script>
+        function aplicarTemaFundo() {
+            if (localStorage.getItem('theme') === 'dark') {
+                document.body.classList.add('dark-theme');
+                document.documentElement.classList.add('dark-theme');
+            } else {
+                document.body.classList.remove('dark-theme');
+                document.documentElement.classList.remove('dark-theme');
+            }
+        }
+        aplicarTemaFundo();
+    </script>
+
+    <h1 style="margin-bottom: 25px; font-size: 24px;"><i class="fa-solid fa-sliders" style="color: var(--primary)"></i> Configurações Avançadas da Central</h1>
+
+    <div class="config-grid">
+        <div class="card">
+            <h3 style="color: var(--primary); margin: 0 0 15px 0;"><i class="fa-solid fa-palette"></i> Interface e Design</h3>
+            
+            <div class="setting-row">
+                <div>
+                    <div style="font-weight: bold; font-size: 14px;">Modo Escuro (Cyber Dark)</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Aplica visual neon de alta performance noturna.</div>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="themeToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="setting-row">
+                <div>
+                    <div style="font-weight: bold; font-size: 14px;">Alertas Sonoros do Painel</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Sons para novas solicitações recebidas.</div>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="soundToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="color: var(--primary); margin: 0 0 15px 0;"><i class="fa-solid fa-bolt"></i> Automação e Sincronismo</h3>
+            
+            <div class="setting-row">
+                <div>
+                    <div style="font-weight: bold; font-size: 14px;">Auto-Refresh do Kanban</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Intervalo de busca automática de ordens.</div>
+                </div>
+                <select id="refreshInterval" class="tech-select" onchange="alterarIntervalo(this.value)">
+                    <option value="15000">15 Segundos</option>
+                    <option value="30000">30 Segundos</option>
+                    <option value="60000">1 Minuto</option>
+                    <option value="0">Manual apenas</option>
+                </select>
+            </div>
+
+            <div class="setting-row">
+                <div>
+                    <div style="font-weight: bold; font-size: 14px;">Status da Conexão API</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Monitoramento em tempo real do banco de dados na nuvem.</div>
+                </div>
+                <div class="ping-indicator">
+                    <span id="pingDot" class="dot"></span> <span id="pingText">Verificando...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 25px; border-top: 2px solid #EF4444;">
+        <h3 style="color: #EF4444; margin: 0 0 10px 0;"><i class="fa-solid fa-triangle-exclamation"></i> Zona do Desenvolvedor / Segurança</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 13px; color: var(--text-muted);">Limpa os tokens de autenticação locais e força a desconexão segura do terminal da empresa.</div>
+            <button class="btn-danger" onclick="limparSessao()"><i class="fa-solid fa-power-off"></i> Limpar Cache e Sair</button>
+        </div>
+    </div>
+
+    <script>
+        const toggle = document.getElementById('themeToggle');
+        const soundToggle = document.getElementById('soundToggle');
+        const selectInterval = document.getElementById('refreshInterval');
+
+        // Carrega estados salvos
+        if (localStorage.getItem('theme') === 'dark') toggle.checked = true;
+        soundToggle.checked = localStorage.getItem('sound_alerts') === 'true';
+        selectInterval.value = localStorage.getItem('kanban_refresh_rate') || "15000";
+
+        // Listener de Tema Operando perfeitamente
+        toggle.addEventListener('change', function() {
+            const temaAtual = this.checked ? 'dark' : 'light';
+            localStorage.setItem('theme', temaAtual);
+            
+            if (this.checked) {
+                document.body.classList.add('dark-theme');
+                document.documentElement.classList.add('dark-theme');
+            } else {
+                document.body.classList.remove('dark-theme');
+                document.documentElement.classList.remove('dark-theme');
+            }
+            
+            // Dispara para a janela principal atualizar menus
+            window.parent.postMessage('toggleTheme', '*');
+        });
+
+        soundToggle.addEventListener('change', function() {
+            localStorage.setItem('sound_alerts', this.checked);
+        });
+
+        function alterarIntervalo(val) {
+            localStorage.setItem('kanban_refresh_rate', val);
+        }
+
+        function limparSessao() {
+            if(confirm("Deseja realmente limpar seus dados de acesso?")) {
+                localStorage.clear();
+                window.parent.location.reload();
+            }
+        }
+
+        // Testador de Sinal Real com a API do Render
+        async function testarConexaoAPI() {
+            const dot = document.getElementById("pingDot");
+            const text = document.getElementById("pingText");
+            try {
+                const start = performance.now();
+                // Bate no endpoint de solicitações pra ver o tempo de resposta
+                const res = await fetch("https://appdedetizacao.onrender.com/api/solicitacoes", {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                });
+                const duration = Math.round(performance.now() - start);
+                
+                dot.className = "dot online";
+                text.innerText = `ONLINE (${duration}ms)`;
+                text.style.color = "#3DDC84";
+            } catch(e) {
+                dot.className = "dot offline";
+                text.innerText = "DESCONECTADO";
+                text.style.color = "#EF4444";
+            }
+        }
+
+        testarConexaoAPI();
+        setInterval(testarConexaoAPI, 10000); // Testa a cada 10s
+    </script>
+</body>
+</html>

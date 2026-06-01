@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>PestControlX - Central de Gerenciamento</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css"> 
+</head>
+<body>
+    <script>
+        if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-theme');
+    </script>
+
+    <header class="topbar">
+        <div class="topbar-left">
+            <button class="toggle-btn" onclick="toggleMenu()"><i class="fa-solid fa-bars"></i></button>
+            <h1 style="color: var(--primary); font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-shield-virus"></i> PestControlX Soluções
+            </h1>
+        </div>
+        <div style="width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--primary); overflow: hidden;">
+            <img id="imgPfpTopbar" src="https://via.placeholder.com/150" style="width:100%; height:100%; object-fit:cover;">
+        </div>
+    </header>
+
+    <div class="app-body">
+        <nav class="sidebar" id="sidebar">
+            <div class="profile-area">
+                <div class="profile-pic-container">
+                    <img id="imgPfpSidebar" src="https://via.placeholder.com/150">
+                    <label class="change-pic-btn" for="filePfpInput">ALTERAR</label>
+                </div>
+                <input type="file" id="filePfpInput" accept="image/*" style="display:none;" onchange="uploadFotoPerfil(this)">
+                
+                <div id="userName" style="font-weight: 700; color: var(--text-main); font-size: 15px; margin-top: 5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Buscando nome...</div>
+                <div id="userEmail" style="font-size: 12px; color: var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Buscando e-mail...</div>
+            </div>
+            
+            <div class="nav-buttons">
+                <button class="nav-btn active" onclick="navegar(this, 'solicitacoes.html')"><i class="fa-solid fa-chart-line"></i> <span>Monitoramento</span></button>
+                <button class="nav-btn" onclick="navegar(this, 'clientes.html')"><i class="fa-solid fa-users"></i> <span>Clientes</span></button>
+                <button class="nav-btn" onclick="navegar(this, 'chat.html')"><i class="fa-regular fa-comments"></i> <span>Chat ao Vivo</span></button>
+                <button class="nav-btn" onclick="navegar(this, 'sobre.html')"><i class="fa-solid fa-building-shield"></i> <span>Sobre a Empresa</span></button>
+                <button class="nav-btn" onclick="navegar(this, 'configuracoestela.html')"><i class="fa-solid fa-sliders"></i> <span>Configurações</span></button>
+            </div>
+            <button class="logout-btn" onclick="logout()"><i class="fa-solid fa-power-off"></i> <span>SAIR</span></button>
+        </nav>
+
+        <main class="main-content">
+            <iframe id="telaExterna" src="solicitacoes.html"></iframe>
+        </main>
+    </div>
+
+    <script>
+        // Carregamento dinâmico dos dados locais assim que abre
+        document.addEventListener("DOMContentLoaded", () => {
+            // Se as chaves do seu login forem diferentes dessas, me avisa!
+            const email = localStorage.getItem("userEmail") || localStorage.getItem("email") || "central@pestcontrolx.com";
+            const nome = localStorage.getItem("empresaNome") || localStorage.getItem("nome") || "PestControlX Matriz";
+            
+            document.getElementById("userName").innerText = nome;
+            document.getElementById("userEmail").innerText = email;
+
+            // Mantém a foto salva em cache
+            const fotoSalva = localStorage.getItem("pfpBase64");
+            if(fotoSalva) {
+                document.getElementById("imgPfpSidebar").src = fotoSalva;
+                document.getElementById("imgPfpTopbar").src = fotoSalva;
+            }
+        });
+
+        function navegar(btnElement, url) {
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+            document.getElementById('telaExterna').src = url;
+        }
+
+        function toggleMenu() {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        }
+
+        function uploadFotoPerfil(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const base64 = e.target.result;
+                    localStorage.setItem("pfpBase64", base64);
+                    document.getElementById("imgPfpSidebar").src = base64;
+                    document.getElementById("imgPfpTopbar").src = base64;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = "index.html";
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,257 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    --brand-primary: #10b981; /* Verde esmeralda moderno */
+    --brand-dark: #065f46;
+    --bg-body: #f8fafc;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --white: #ffffff;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+    --shadow-md: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.05);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    background: radial-gradient(circle at top right, #ffffff, #f1f5f9);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-main);
+    padding: 20px;
+}
+
+/* Animações de Entrada */
+@keyframes reveal {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Header de Marca */
+.brand-container {
+    text-align: center;
+    margin-bottom: 32px;
+    animation: reveal 0.6s ease-out forwards;
+}
+
+.logo-wrapper {
+    width: 64px;
+    height: 64px;
+    background: var(--white);
+    border-radius: 16px;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+}
+
+.brand-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--text-main);
+    text-transform: uppercase;
+}
+
+.brand-name span {
+    color: var(--brand-primary);
+}
+
+.brand-tagline {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* Card do Formulário */
+.glass-card {
+    background: var(--white);
+    width: 100%;
+    max-width: 480px;
+    padding: 40px;
+    border-radius: 24px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md);
+    animation: reveal 0.8s ease-out 0.2s backwards;
+}
+
+/* Inputs e Labels */
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+input, select {
+    width: 100%;
+    padding: 12px 16px;
+    background: #fdfdfd;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    transition: all 0.2s ease;
+}
+
+input::placeholder {
+    color: #cbd5e1;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+    background: var(--white);
+}
+
+/* Grid Layout */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.full {
+    grid-column: span 2;
+}
+
+/* Botões Profissionais */
+button {
+    cursor: pointer;
+    font-size: 0.938rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    width: 100%;
+    background: var(--brand-primary);
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 12px;
+}
+
+.btn-primary:hover {
+    background: var(--brand-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    padding: 14px 24px;
+    border-radius: 12px;
+}
+
+.btn-ghost:hover {
+    background: var(--bg-body);
+    color: var(--text-main);
+}
+
+.actions-footer {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+/* Controle de Passos */
+.step {
+    display: none;
+}
+
+.step.active {
+    display: block;
+    animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Responsividade Mobile */
+@media (max-width: 480px) {
+    .glass-card {
+        padding: 24px;
+        border-radius: 0;
+        border: none;
+        box-shadow: none;
+        background: transparent;
+    }
+    body {
+        background: var(--white);
+        justify-content: flex-start;
+    }
+}
+
+/* Container principal das logos */
+.brand-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centraliza tudo horizontalmente */
+    justify-content: center;
+    margin-top: 10px;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+/* Tamanho do Ícone (a barata/alvo) */
+.logo-img {
+    width: 120px; /* Ajuste esse valor para aumentar ou diminuir o ícone */
+    height: auto; /* Mantém a proporção sem achatar */
+    margin-bottom: 10px;
+    display: block;
+}
+
+/* Tamanho da Imagem com o Nome do App */
+.app-name-img {
+    width: 200px; /* Ajuste aqui para o tamanho do texto PestControlX */
+    height: auto;
+    display: block;
+    margin-bottom: 5px;
+}
+
+/* Tagline (O texto de baixo) */
+.brand-tagline {
+    font-size: 14px;
+    color: #ffffff; /* Ou a cor que preferir */
+    opacity: 0.8;
+    margin-top: 3px;
+}
+
+/* Ajuste para telas pequenas (Celular) */
+@media (max-width: 480px) {
+    .logo-img {
+        width: 100px;
+    }
+    .app-name-img {
+        width: 180px;
+    }
+}

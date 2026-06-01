@@ -1,0 +1,216 @@
+/* Importação da mesma fonte */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+:root {
+    --primary-green: #2ecc71;
+    --dark-green: #27ae60;
+    --light-gray: #f4f7f6;
+    --medium-gray: #bdc3c7;
+    --text-dark: #2c3e50;
+    --white: #ffffff;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, var(--white) 0%, var(--light-gray) 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: var(--text-dark);
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.header-app {
+    text-align: center;
+    margin-bottom: 30px;
+    animation: fadeInUp 0.8s ease-out;
+}
+
+.logo-placeholder {
+    width: 80px;
+    height: 80px;
+    background: var(--white);
+    border-radius: 20px;
+    margin: 0 auto 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    border: 2px solid var(--primary-green);
+}
+
+.app-name {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.app-name span {
+    color: var(--primary-green);
+}
+
+.subtitle {
+    font-size: 0.9rem;
+    color: var(--medium-gray);
+}
+
+/* Formulário de Login */
+#loginForm {
+    width: 100%;
+    max-width: 400px;
+    background: var(--white);
+    padding: 35px;
+    border-radius: 25px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+    animation: fadeInUp 1s ease-out;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-dark);
+    margin-left: 5px;
+}
+
+input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid var(--light-gray);
+    border-radius: 12px;
+    background-color: var(--light-gray);
+    transition: all 0.3s ease;
+    outline: none;
+    font-size: 1rem;
+}
+
+input:focus {
+    border-color: var(--primary-green);
+    background-color: var(--white);
+    box-shadow: 0 0 8px rgba(46, 204, 113, 0.2);
+}
+
+.forgot-password {
+    text-align: right;
+    margin-bottom: 25px;
+}
+
+.forgot-password a {
+    font-size: 0.8rem;
+    color: var(--medium-gray);
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.forgot-password a:hover {
+    color: var(--dark-green);
+}
+
+/* Botão Entrar */
+.btn-main {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: linear-gradient(to right, var(--primary-green), var(--dark-green));
+    color: white;
+    box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
+}
+
+.btn-main:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(46, 204, 113, 0.4);
+}
+
+/* Link de Registro no Rodapé */
+.register-link {
+    text-align: center;
+    margin-top: 25px;
+}
+
+.register-link p {
+    font-size: 0.9rem;
+    color: var(--medium-gray);
+}
+
+.register-link a {
+    color: var(--primary-green);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.register-link a:hover {
+    text-decoration: underline;
+}
+
+.header-app {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-top: 40px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* O círculo ou ícone da logo */
+.logo-img {
+    width: 200px; /* Um pouco menor que no cadastro para dar foco ao formulário */
+    height: auto;
+    margin-bottom: 15px;
+    display: block;
+}
+
+/* O texto 'PestControlX' em imagem */
+.app-name-img {
+    width: 200px; 
+    height: auto;
+    display: block;
+    margin-bottom: 10px;
+}
+
+/* O texto "Bem-vindo de volta" */
+.subtitle {
+    font-size: 16px;
+    color: #ffffff; /* Ajuste para a cor do seu texto */
+    font-weight: 300;
+    opacity: 0.9;
+}
+
+/* Ajuste para telas de celular */
+@media (max-width: 480px) {
+    .logo-img {
+        width: 80px;
+    }
+    .app-name-img {
+        width: 150px;
+    }
+}

@@ -1,0 +1,233 @@
+/* RESET DO SISTEMA */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+:root {
+    --bg-system: #F8FAFC;
+    --bg-card: #FFFFFF;
+    --primary: #27B774;
+    --primary-hover: #1E9E60;
+    --text-main: #1E293B;
+    --text-muted: #64748B;
+    --border-color: #E2E8F0;
+    --sidebar-width: 260px;
+}
+
+body.dark-theme {
+    --bg-system: #0B0F17;
+    --bg-card: #151D2A;
+    --primary: #3DDC84;
+    --primary-hover: #27B774;
+    --text-main: #F1F5F9;
+    --text-muted: #94A3B8;
+    --border-color: #243247;
+}
+
+/* ESTRUTURA VERTICAL - IMPEDE SOBREPOSIÇÃO */
+html, body {
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    background-color: var(--bg-system);
+    color: var(--text-main);
+    display: flex;
+    flex-direction: column;
+}
+
+/* TOPBAR SUPERIOR (FIXA NO TOPO DO FLUXO) */
+.topbar {
+    height: 65px;
+    width: 100%;
+    background-color: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 24px;
+    flex-shrink: 0;
+}
+
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.toggle-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--text-main);
+    padding: 5px;
+}
+
+/* CONTAINER DO CORPO (SIDEBAR + CONTEÚDO LADO A LADO) */
+.app-body {
+    display: flex;
+    flex: 1;
+    width: 100%;
+    overflow: hidden;
+}
+
+/* SIDEBAR TOTALMENTE CLICÁVEL */
+.sidebar {
+    width: var(--sidebar-width);
+    height: 100%;
+    background-color: var(--bg-card);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar.collapsed {
+    width: 75px;
+}
+
+/* ÁREA DE PERFIL (FOTO, NOME, EMAIL) */
+.profile-area {
+    padding: 24px 16px;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.profile-pic-container {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid var(--primary);
+    margin: 0 auto 12px auto;
+    position: relative;
+    overflow: hidden;
+    background: #F1F5F9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-pic-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.change-pic-btn {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.65);
+    color: #FFF;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 4px 0;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.profile-pic-container:hover .change-pic-btn {
+    opacity: 1;
+}
+
+/* BOTÕES DO MENU NAVIGATION */
+.nav-buttons {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    padding: 15px 0;
+    overflow-y: auto;
+}
+
+.nav-btn {
+    background: none;
+    border: none;
+    padding: 14px 24px;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: all 0.15s ease;
+    width: 100%;
+}
+
+.nav-btn i {
+    font-size: 18px;
+    width: 24px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.nav-btn:hover {
+    background-color: rgba(39, 183, 116, 0.06);
+    color: var(--primary);
+}
+
+.nav-btn:hover i {
+    color: var(--primary);
+}
+
+.nav-btn.active {
+    background-color: rgba(39, 183, 116, 0.1);
+    color: var(--primary);
+    border-right: 4px solid var(--primary);
+}
+
+.nav-btn.active i {
+    color: var(--primary);
+}
+
+/* SINALIZAÇÃO DO MENU RECOLHIDO */
+.sidebar.collapsed .profile-area,
+.sidebar.collapsed .nav-btn span,
+.sidebar.collapsed .logout-btn span {
+    display: none;
+}
+
+.sidebar.collapsed .nav-btn,
+.sidebar.collapsed .logout-btn {
+    justify-content: center;
+    padding: 15px 0;
+}
+
+.logout-btn {
+    background: none;
+    border: none;
+    color: #EF4444;
+    padding: 18px 24px;
+    cursor: pointer;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border-top: 1px solid var(--border-color);
+    width: 100%;
+}
+
+.logout-btn:hover {
+    background-color: rgba(239, 68, 68, 0.06);
+}
+
+/* ÁREA DO CONTEÚDO CENTRAL (MÁXIMA PERFORMANCE PRO IFRAME) */
+.main-content {
+    flex: 1;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+.main-content iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PestControlX - Verificação de Identidade</title>
+    <style>
+        :root {
+            --bg-global: #f8fafc;
+            --card-bg: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --brand-green: #16a34a;
+            --brand-green-hover: #15803d;
+            --border-light: #e2e8f0;
+            --input-focus: #bbf7d0;
+        }
+        body {
+            background-color: var(--bg-global);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .token-wrapper {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            padding: 45px 40px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            box-sizing: border-box;
+        }
+        .brand-header img.logo { 
+            max-height: 85px; 
+            margin-bottom: 16px; 
+        }
+        h2 { font-size: 20px; font-weight: 600; margin: 0 0 10px 0; color: var(--text-primary); }
+        p.description { color: var(--text-secondary); font-size: 14px; margin-bottom: 30px; line-height: 1.5; }
+        .input-code-group input { 
+            width: 100%; 
+            padding: 14px; 
+            background-color: #fff; 
+            border: 1px solid var(--border-light); 
+            border-radius: 10px; 
+            color: var(--text-primary); 
+            font-size: 24px; 
+            font-weight: 700; 
+            letter-spacing: 8px; 
+            text-align: center; 
+            box-sizing: border-box; 
+            transition: all 0.2s; 
+        }
+        .input-code-group input:focus { outline: none; border-color: var(--brand-green); box-shadow: 0 0 0 3px var(--input-focus); }
+        .btn-verify { width: 100%; padding: 14px; background-color: var(--brand-green); border: none; border-radius: 10px; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; margin-top: 25px; }
+        .btn-verify:hover { background-color: var(--brand-green-hover); }
+        .back-to-login { display: inline-block; margin-top: 25px; color: var(--text-secondary); text-decoration: none; font-size: 13px; }
+        .back-to-login:hover { color: var(--brand-green); text-decoration: underline; }
+        .alert-box { margin-top: 15px; padding: 12px; border-radius: 10px; font-size: 13px; display: none; text-align: left; }
+        .alert-error { background-color: #fef2f2; border: 1px solid #fee2e2; color: #991b1b; }
+        .alert-success { background-color: #f0fdf4; border: 1px solid #dcfce7; color: #166534; }
+    </style>
+</head>
+<body>
+    <div class="token-wrapper">
+        <div class="brand-header">
+            <img src="img/logo2 copy.png" alt="Logo" class="logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2942/2942780.png'">
+        </div>
+
+        <h2>Verificação de Segurança</h2>
+        <p class="description">Introduza o código de validação de 6 dígitos enviado para a sua caixa de correio eletrónico corporativa.</p>
+
+        <form id="tokenForm">
+            <div class="input-code-group">
+                <input type="text" id="codigo" placeholder="000000" maxlength="6" autocomplete="off" required>
+            </div>
+
+            <button type="submit" class="btn-verify">Confirmar Identidade</button>
+            <div id="alertBox" class="alert-box"></div>
+
+            <a href="index.html" class="back-to-login">← Voltar para o Login</a>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.getElementById("tokenForm");
+            const BASE_URL = "https://appdedetizacao.onrender.com";
+
+            if (!form) {
+                console.error("Erro: Formulário não foi encontrado.");
+                return;
+            }
+
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+                validarToken();
+            });
+
+            async function validarToken() {
+                const codigoInput = document.getElementById("codigo");
+                const btnSubmit = form.querySelector("button");
+                const alertBox = document.getElementById("alertBox");
+                
+                if (!codigoInput || !alertBox) {
+                    console.error("Erro interno: Elementos da árvore DOM não mapeados.");
+                    return;
+                }
+
+                const codigo = codigoInput.value.trim();
+                const email = localStorage.getItem("emailTemp") || localStorage.getItem("logging_email");
+
+                if (!email) {
+                    alertBox.className = "alert-box alert-error";
+                    alertBox.textContent = "Sessão expirada ou inválida. Retornando ao login...";
+                    alertBox.style.display = "block";
+                    setTimeout(() => { window.location.href = "index.html"; }, 2000);
+                    return;
+                }
+
+                if (!codigo || codigo.length < 6) {
+                    alertBox.className = "alert-box alert-error";
+                    alertBox.textContent = "Por favor, insira o código de autenticação completo (6 dígitos).";
+                    alertBox.style.display = "block";
+                    return;
+                }
+
+                // Efeito Estilizado Industrial/Neon
+                const originalText = btnSubmit.innerHTML;
+                btnSubmit.innerHTML = "〈 VALIDANDO ACESSO... 〉";
+                btnSubmit.disabled = true;
+                btnSubmit.style.boxShadow = "0 0 15px #00ffcc"; 
+                alertBox.style.display = "none";
+
+                try {
+    const response = await fetch(`${BASE_URL}/auth/validar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, codigo })
+    });
+
+    // 1. PRIMEIRO checa se a resposta é válida antes de tratar os dados
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Código de autenticação inválido ou expirado.");
+    }
+
+    const data = await response.json();
+    console.log("📡 Resposta Completa do Servidor:", data);
+
+    // 2. Extração ultra-segura do Token JWT
+    const tokenGerado = data.token || data.token_usuario || data.accessToken;
+    if (!tokenGerado) {
+        throw new Error("Erro crítico: O servidor não emitiu uma chave de assinatura JWT válida.");
+    }
+
+    // 3. Mapeia o ID de forma profunda (caso venha dentro de um objeto de usuário/empresa)
+    let idEncontrado = data.idEmpresa || data.id || data.empresaId || data.usuarioId;
+    
+    if (!idEncontrado && data.usuario) {
+        idEncontrado = data.usuario.id || data.usuario.empresaId;
+    }
+    if (!idEncontrado && data.empresa) {
+        idEncontrado = data.empresa.id;
+    }
+    
+    if (!idEncontrado) {
+        console.error("⚠️ Estrutura recebida inválida:", data);
+        throw new Error("Erro de sincronização: O servidor não retornou um ID corporativo válido no payload.");
+    }
+
+    // 4. Limpa chaves provisórias de login
+    localStorage.removeItem("emailTemp");
+    localStorage.removeItem("logging_email");
+
+    // 5. Sincroniza e espelha todas as chaves de autenticação consumidas pelo ecossistema
+    localStorage.setItem("token", tokenGerado);
+    localStorage.setItem("token_usuario", tokenGerado);
+    localStorage.setItem("TOKEN_AUTH", tokenGerado);
+    
+    // Armazena os IDs tratados como String pura para evitar o erro "undefined" nas URLs
+    localStorage.setItem("empresaId", String(idEncontrado));
+    localStorage.setItem("usuario_id", String(idEncontrado));
+    
+    // Dados de exibição de Perfil
+    const nomeExibicao = data.nome || (data.empresa ? data.empresa.nome : null) || "Operador Corporativo";
+    localStorage.setItem("tipoUsuario", data.tipo || "EMPRESA");
+    localStorage.setItem("userName", nomeExibicao);
+    localStorage.setItem("empresaNome", nomeExibicao);
+    localStorage.setItem("userEmail", email);
+
+    // Interface visual de sucesso
+    alertBox.className = "alert-box alert-success";
+    alertBox.textContent = "Acesso autorizado! Estabelecendo conexão segura...";
+    alertBox.style.display = "block";
+
+    btnSubmit.innerHTML = "〈 CONEXÃO ESTABELECIDA 〉";
+    btnSubmit.style.boxShadow = "0 0 20px #00ff55";
+    btnSubmit.style.color = "#00ff55";
+
+    const tipoTratado = data.tipo ? data.tipo.toUpperCase() : "EMPRESA";
+    let destino = "dashboard_empresa.html";
+    
+    if (tipoTratado === "ADMIN" || tipoTratado === "ADMINISTRADOR") {
+        destino = "dashboard_admin.html";
+    } else if (tipoTratado === "CLIENTE") {
+        destino = "dashboard_cliente.html";
+    }
+
+    setTimeout(() => {
+        window.location.href = destino;
+    }, 1200);
+
+} catch (err) {
+    // Tratamento de falhas sem quebrar a árvore de execução do JavaScript
+    alertBox.className = "alert-box alert-error";
+    alertBox.textContent = err.message;
+    alertBox.style.display = "block";
+
+    btnSubmit.innerHTML = originalText;
+    btnSubmit.disabled = false;
+    btnSubmit.style.boxShadow = "";
+    btnSubmit.style.color = "";
+}
+            }
+        });
+    </script>
+</body>
+</html>

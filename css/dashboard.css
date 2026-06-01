@@ -1,0 +1,87 @@
+/* RESET E FUNDO GRADIENTE */
+body {
+    margin: 0;
+    background: linear-gradient(180deg, #F0F2F5 0%, #FFFFFF 100%);
+    background-attachment: fixed;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
+    min-height: 100vh;
+}
+
+/* HEADER COM GRADIENTE VERDE (IGUAL AO APP) */
+.navbar, .dashboard-header {
+    background: linear-gradient(90deg, #76D248 0%, #B5E61D 100%) !important;
+    padding: 15px 0;
+    border-bottom: 4px solid #558B2F;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.tech-logo, .app-name-img {
+    filter: brightness(0.1); /* Deixa a logo escura para contrastar com o verde claro */
+}
+
+/* BOX DO DASHBOARD COM GRADIENTE BRANCO SUAVE */
+.dashboard-box {
+    background: linear-gradient(145deg, #ffffff, #f5f5f5);
+    border-radius: 15px;
+    border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 7px 7px 15px #d1d1d1, -7px -7px 15px #ffffff;
+    padding: 25px;
+    margin-top: 30px;
+}
+
+/* CARDS DE STATUS */
+.card-status, .card {
+    background: #333333; /* Fundo escuro igual aos botões do App */
+    color: #00E676;      /* Texto verde */
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    border: none;
+    transition: 0.3s;
+    margin-bottom: 15px;
+}
+
+.card-status:hover {
+    transform: scale(1.03);
+    background: #1A1A1A;
+}
+
+.card-status .valor {
+    font-size: 28px;
+    font-weight: bold;
+    display: block;
+}
+
+/* TABELAS */
+.table-container {
+    background: white;
+    border-radius: 12px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.table thead {
+    background: #333;
+    color: #00E676;
+}
+
+/* BOTÕES */
+.btn-warning { background-color: #FFA000; border: none; color: #fff; }
+.btn-danger { background-color: #D32F2F; border: none; color: #fff; }
+
+.btn-action, button {
+    background: #333;
+    color: #00E676;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover { background: #00E676; color: #333; }
+
+/* UTILS */
+.text-success { color: #558B2F !important; font-weight: bold; }

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Admin - PestControlX</title>
+</head>
+
+<body>
+<link rel="stylesheet" href="css/dashboard.css">
+<div class="container">
+    <header class="dashboard-header">
+        <img src="img/nomeapp copy.png" alt="PestControlX" class="app-name-img">
+        <div class="admin-info">
+            <h2>Painel Administrador</h2>
+            <p>Logado como: <span id="userName" class="text-success">...</span></p>
+        </div>
+    </header>
+
+    <div class="grid-stats">
+        <div class="dashboard-box">
+            <h3>Visão Geral</h3>
+            <div class="cards-container">
+                <div class="card">Clientes: <span id="clientes">10</span></div>
+                <div class="card">Funcionários: <span id="funcionarios">5</span></div>
+                <div class="card">Empresas: <span id="empresas">2</span></div>
+            </div>
+        </div>
+
+        <div class="dashboard-box">
+            <h3>Gerenciar Usuários</h3>
+            <button class="btn-action" onclick="listarUsuarios()">Listar Usuários Ativos</button>
+            <ul id="listaUsuarios" class="custom-list"></ul>
+        </div>
+    </div>
+
+    <button class="btn-logout" onclick="logout()">Sair do Sistema</button>
+</div>
+
+<script src="js/dashboard_admin.js"></script>
+</body>
+</html>
