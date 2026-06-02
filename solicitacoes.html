@@ -153,19 +153,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 
-  <script>
-    // 🔥 LOG IMEDIATO: Se o arquivo abrir, isto TEM de aparecer no console na hora!
-    console.log("🚀 [PestControlX] Script injetado e carregado com sucesso no navegador!");
-
+   <script>
     const API_BASE_URL = "https://appdedetizacao.onrender.com";
     let map, currentMarker, stompClient = null;
     let activeTrackingId = null;
 
     function initMap() {
-        // Verifica se a div do mapa existe antes de tentar criar
-        if (!document.getElementById('map')) {
-            throw new Error("A tag HTML com id='map' não foi encontrada na página!");
-        }
         map = L.map('map').setView([-23.45, -46.73], 12);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; OpenStreetMap &copy; CARTO',
@@ -180,30 +173,39 @@
         return localStorage.getItem("token") || localStorage.getItem("jwt") || "";
     }
 
-    async function carregarSolicitacoes() {
-        console.log("🔄 [PASSO 2] Entrou na função carregarSolicitacoes()...");
-        
-        const container = document.getElementById("lista-solicitacoes");
-        if (!container) {
-            console.error("❌ ERRO CRÍTICO: Não foi encontrada nenhuma tag HTML com id='lista-solicitacoes'!");
-            alert("Erro de Layout: Adicione id='lista-solicitacoes' na div onde os cards devem aparecer!");
-            return;
+    function atualizarTokenManual(valor) {
+        const statusLabel = document.getElementById("token-status");
+        if (valor.trim().length > 10) {
+            localStorage.setItem("token", valor.trim());
+            if (statusLabel) {
+                statusLabel.innerText = "JWT INJETADO";
+                statusLabel.className = "text-[#3DDC84] font-bold";
+            }
+            carregarSolicitacoes();
+        } else {
+            if (statusLabel) {
+                statusLabel.innerText = "JWT AUSENTE";
+                statusLabel.className = "text-red-400 font-bold";
+            }
         }
+    }
 
+    async function carregarSolicitacoes() {
         const token = obterTokenAutenticacao();
-        console.log("🔑 Token detetado:", token ? "Sim (Iniciado com " + token.substring(0, 10) + "...)" : "Não encontrado");
+        const container = document.getElementById("lista-solicitacoes");
+
+        if (!container) return;
 
         if (!token) {
             container.innerHTML = `
                 <div class="text-center py-8 px-4 border border-dashed border-red-500/30 rounded-lg bg-red-500/5">
-                    <p class="text-xs text-red-400 font-bold uppercase mb-2">Acesso Negado (Token Ausente)</p>
-                    <p class="text-[11px] text-gray-400">Insira o seu Token JWT no campo de autenticação.</p>
+                    <p class="text-xs text-red-400 font-bold uppercase mb-2">Acesso Negado pelo Backend (Erro 401)</p>
+                    <p class="text-[11px] text-gray-400">Por favor, cole o token gerado pelo login no campo de autenticação.</p>
                 </div>`;
             return;
         }
 
         try {
-            console.log("📡 Fazendo chamada HTTP Fetch para o Render...");
             const response = await fetch(`${API_BASE_URL}/api/solicitacoes`, {
                 method: "GET",
                 headers: {
@@ -216,12 +218,10 @@
             if (!response.ok) throw new Error("ERRO_DE_REDE");
             
             const ordens = await response.json();
-            console.log("📦 Dados recebidos do Banco de Dados:", ordens);
-            
             container.innerHTML = "";
 
             if (!ordens || ordens.length === 0) {
-                container.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">Nenhuma solicitação encontrada.</p>`;
+                container.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">Nenhuma solicitação encontrada no momento.</p>`;
                 return;
             }
 
@@ -230,8 +230,8 @@
 
             ordens.forEach(ordem => {
                 const statusOS = (ordem.status || "").toUpperCase();
-                console.log(`📋 Renderizando OS #${ordem.id} | Status: ${statusOS}`);
                 
+                // 🚀 AJUSTE CHAVE: Suporta o ID vindo direto da raiz ou aninhado no objeto cliente
                 const clienteId = ordem.clienteId || (ordem.cliente ? ordem.cliente.id : null);
                 
                 if (statusOS === 'PENDENTE' || statusOS === 'ABERTA') pendentes++;
@@ -244,9 +244,16 @@
                 let statusBadge = '';
                 let acaoBtn = '';
 
+                // Se o status for pendente ou aberta, renderiza o botão de aceite obrigatoriamente
                 if (statusOS === 'PENDENTE' || statusOS === 'ABERTA') {
                     statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">PENDENTE</span>`;
+                    
+                    // Fallback para 0 caso o backend não tenha enviado o ID do cliente (evita sumir com o botão)
                     const idEnvioCliente = clienteId || 0;
+                    if (!clienteId) {
+                        console.warn(`[Aviso] Ordem #${ordem.id} veio sem ID de cliente associado no JSON.`);
+                    }
+
                     acaoBtn = `
                         <button onclick="aceitarOrdemEmpresa(${idEnvioCliente}, ${ordem.id})" class="mt-3 w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold text-xs py-1.5 px-3 rounded transition flex items-center justify-center gap-1">
                             🤝 ACEITAR SOLICITAÇÃO
@@ -261,7 +268,7 @@
 
                 const card = document.createElement("div");
                 card.id = `card-os-${ordem.id}`;
-                card.className = `neon-border bg-[#0d1117] p-4 rounded-lg flex flex-col justify-between cursor-pointer`;
+                card.className = `neon-border bg-[#0d1117] p-4 rounded-lg flex flex-col justify-between cursor-pointer ${activeTrackingId === ordem.id ? 'active' : ''}`;
                 card.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
                         <span class="text-xs font-bold text-gray-400">OS #${ordem.id}</span>
@@ -275,49 +282,160 @@
                 container.appendChild(card);
             });
 
-            document.getElementById("counter-pendente") ? document.getElementById("counter-pendente").innerText = pendentes : null;
-            document.getElementById("counter-andamento") ? document.getElementById("counter-andamento").innerText = emAndamento : null;
+            // Atualiza os contadores em tela de forma segura
+            const elPendente = document.getElementById("counter-pendente");
+            const elAndamento = document.getElementById("counter-andamento");
+            if (elPendente) elPendente.innerText = pendentes;
+            if (elAndamento) elAndamento.innerText = emAndamento;
 
         } catch (error) {
-            console.error("❌ Erro na execução de carregarSolicitacoes:", error);
+            console.error("Falha ao sincronizar dados:", error);
+            if (error.message === "TOKEN_INVALIDO") {
+                container.innerHTML = `
+                    <div class="text-center py-8 px-4 border border-dashed border-red-500/30 rounded-lg bg-red-500/5">
+                        <p class="text-xs text-red-400 font-bold uppercase mb-2">Sessão Expirada ou Token Inválido</p>
+                        <p class="text-[11px] text-gray-400">Atualize com um novo Token JWT válido.</p>
+                    </div>`;
+            } else {
+                container.innerHTML = `<p class="text-sm text-red-400 text-center py-6">Falha crítica ao conectar com a API Render.</p>`;
+            }
         }
     }
 
-    // Execução controlada ao carregar a página
-    window.onload = () => {
-        console.log("🏁 [PASSO 1] Página totalmente carregada (window.onload).");
-        
-        // 1. Tenta carregar o mapa de forma isolada
-        try {
-            initMap();
-            console.log("✅ Mapa Leaflet carregado sem erros.");
-        } catch (errMapa) {
-            console.error("⚠️ Falha ao criar o mapa (mas o sistema continuará a rodar):", errMapa.message);
+    // 🔥 FLUXO DE ACEITAÇÃO REAL-TIME
+    async function aceitarOrdemEmpresa(clienteId, ordemId) {
+        if (clienteId === 0) {
+            alert(`Atenção: Esta ordem (#${ordemId}) não possui um ID de cliente válido associado no banco de dados. O disparo de notificação pode falhar.`);
         }
 
-        // 2. Tenta carregar os dados das solicitações
+        const token = obterTokenAutenticacao();
+        if (!confirm(`Deseja aceitar a Ordem de Serviço #${ordemId} e notificar o cliente?`)) return;
+
+        logTerminal(`Enviando comando de aceitação para OS #${ordemId}...`);
         try {
+            const response = await fetch(`${API_BASE_URL}/api/notifications/trigger-acceptance?clienteId=${clienteId}&ordemId=${ordemId}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) throw new Error("Erro na requisição de aceitação");
+            
+            logTerminal(`Sucesso! OS #${ordemId} ativa. Disparo STOMP/FCM injetado.`);
+            alert(`Ordem #${ordemId} aceita com sucesso! Cliente notificado.`);
             carregarSolicitacoes();
-        } catch (errFluxo) {
-            console.error("❌ Falha crítica no fluxo de solicitações:", errFluxo);
+        } catch (error) {
+            console.error(error);
+            alert("Falha ao processar aceitação da Ordem.");
+        }
+    }
+
+    function conectarRastreamento(idOrdem) {
+        if (activeTrackingId) {
+            document.getElementById(`card-os-${activeTrackingId}`)?.classList.remove('active');
+        }
+        activeTrackingId = idOrdem;
+        document.getElementById(`card-os-${idOrdem}`)?.classList.add('active');
+        
+        const elTrackingId = document.getElementById("os-tracking-id");
+        if (elTrackingId) elTrackingId.innerText = `[ MONITORANDO OS #${idOrdem} ]`;
+
+        if (stompClient && stompClient.connected) {
+            stompClient.disconnect(() => {
+                logTerminal(`Conexão anterior encerrada. Pivotando para nova OS #${idOrdem}`);
+                abrirCanalWebSocket(idOrdem);
+            });
+        } else {
+            abrirCanalWebSocket(idOrdem);
+        }
+    }
+
+    function abrirCanalWebSocket(idOrdem) {
+        logTerminal(`Inicializando handshake com gateway WebSocket...`);
+        const wsStatus = document.getElementById("ws-status");
+        if (wsStatus) {
+            wsStatus.innerText = "CONECTANDO...";
+            wsStatus.className = "text-yellow-500 font-bold";
         }
 
-        // Restaura token se houver
+        const socket = new SockJS(`${API_BASE_URL}/ws-pestcontrol-sockjs`);
+        stompClient = Stomp.over(socket);
+        stompClient.debug = null;
+
+        const token = obterTokenAutenticacao();
+        const headers = { "Authorization": `Bearer ${token}` };
+
+        stompClient.connect(headers, function (frame) {
+            if (wsStatus) {
+                wsStatus.innerText = "SINAL ATIVO";
+                wsStatus.className = "text-[#3DDC84] font-bold";
+            }
+            logTerminal(`Pipeline linkado com sucesso para OS #${idOrdem}`);
+
+            stompClient.subscribe(`/topic/gps/${idOrdem}`, function (response) {
+                try {
+                    const dadosGps = JSON.parse(response.body);
+                    atualizarPosicaoMapa(dadosGps.latitude, dadosGps.longitude, idOrdem);
+                } catch (e) {
+                    logTerminal(`Erro ao processar payload de coordenadas.`);
+                }
+            }, headers);
+        }, function (error) {
+            if (wsStatus) {
+                wsStatus.innerText = "QUEDA DE SINAL";
+                wsStatus.className = "text-red-500 font-bold";
+            }
+            logTerminal(`Erro no barramento de dados: ${error}`);
+        });
+    }
+
+    function atualizarPosicaoMapa(lat, lng, idOrdem) {
+        const Glen = [lat, lng];
+        logTerminal(`Coordenadas recebidas via satélite: Lat ${lat.toFixed(5)} | Lng ${lng.toFixed(5)}`);
+
+        const pulseIcon = L.divIcon({
+            className: 'gps-pulse-icon',
+            iconSize: [16, 16]
+        });
+
+        if (currentMarker) {
+            currentMarker.setLatLng(Glen);
+        } else {
+            currentMarker = L.marker(Glen, { icon: pulseIcon }).addTo(map);
+        }
+
+        map.flyTo(Glen, 16, { animate: true, duration: 1.5 });
+        currentMarker.bindPopup(`<b class="text-black">Técnico PestControlX</b><br>Monitorando OS #${idOrdem}`).openPopup();
+    }
+
+    function logTerminal(mensagem) {
+        const logBox = document.getElementById("terminal-log");
+        if (!logBox) return;
+        const timestamp = new Date().toLocaleTimeString();
+        const logItem = document.createElement("span");
+        logItem.className = "block text-gray-300";
+        logItem.innerHTML = `<span class="text-gray-600">[${timestamp}]</span> > ${mensagem}`;
+        logBox.insertBefore(logItem, logBox.firstChild);
+    }
+
+    window.onload = () => {
+        initMap();
         const tokenSalvo = localStorage.getItem("token") || localStorage.getItem("jwt");
         const jwtInput = document.getElementById("jwt-input");
-        if (tokenSalvo && jwtInput) jwtInput.value = tokenSalvo;
+        const statusLabel = document.getElementById("token-status");
 
-        // Atualização automática a cada 30s
-        setInterval(() => {
-            console.log("⏱️ Atualização automática engatada...");
-            carregarSolicitacoes();
-        }, 30000);
+        if (tokenSalvo && jwtInput) {
+            jwtInput.value = tokenSalvo;
+            if (statusLabel) {
+                statusLabel.innerText = "JWT RESTAURADO";
+                statusLabel.className = "text-[#3DDC84] font-bold";
+            }
+        }
+        carregarSolicitacoes();
+        setInterval(carregarSolicitacoes, 30000);
     };
-
-    // Mantendo as outras funções necessárias
-    async function aceitarOrdemEmpresa(clienteId, ordemId) { ... }
-    function conectarRastreamento(idOrdem) { ... }
-    function logTerminal(mensagem) { ... }
 </script>
 </body>
 </html>
