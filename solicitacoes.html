@@ -153,253 +153,252 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 
-    <script>
-        const API_BASE_URL = "https://appdedetizacao.onrender.com";
-        let map, currentMarker, stompClient = null;
-        let activeTrackingId = null;
+<script>
+    const API_BASE_URL = "https://appdedetizacao.onrender.com";
+    let map, currentMarker, stompClient = null;
+    let activeTrackingId = null;
 
-        function initMap() {
-            map = L.map('map').setView([-23.45, -46.73], 12);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; OpenStreetMap &copy; CARTO',
-                subdomains: 'abcd',
-                maxZoom: 20
-            }).addTo(map);
+    function initMap() {
+        map = L.map('map').setView([-23.45, -46.73], 12);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+    }
+
+    function obterTokenAutenticacao() {
+        const inputToken = document.getElementById("jwt-input").value.trim();
+        if (inputToken) return inputToken;
+        return localStorage.getItem("token") || localStorage.getItem("jwt") || "";
+    }
+
+    function atualizarTokenManual(valor) {
+        const statusLabel = document.getElementById("token-status");
+        if (valor.trim().length > 10) {
+            localStorage.setItem("token", valor.trim());
+            statusLabel.innerText = "JWT INJETADO";
+            statusLabel.className = "text-[#3DDC84] font-bold";
+            carregarSolicitacoes();
+        } else {
+            statusLabel.innerText = "JWT AUSENTE";
+            statusLabel.className = "text-red-400 font-bold";
+        }
+    }
+
+    async function carregarSolicitacoes() {
+        const token = obterTokenAutenticacao();
+        const container = document.getElementById("lista-solicitacoes");
+
+        if (!token) {
+            container.innerHTML = `
+                <div class="text-center py-8 px-4 border border-dashed border-red-500/30 rounded-lg bg-red-500/5">
+                    <p class="text-xs text-red-400 font-bold uppercase mb-2">Acesso Negado pelo Backend (Erro 401)</p>
+                    <p class="text-[11px] text-gray-400">Por favor, cole o token gerado pelo login no campo de autenticação.</p>
+                </div>`;
+            return;
         }
 
-        function obterTokenAutenticacao() {
-            const inputToken = document.getElementById("jwt-input").value.trim();
-            if (inputToken) return inputToken;
-            return localStorage.getItem("token") || localStorage.getItem("jwt") || "";
-        }
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/solicitacoes`, {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
+            
+            if (response.status === 401 || response.status === 403) throw new Error("TOKEN_INVALIDO");
+            if (!response.ok) throw new Error("ERRO_DE_REDE");
+            
+            const ordens = await response.json();
+            container.innerHTML = "";
 
-        function atualizarTokenManual(valor) {
-            const statusLabel = document.getElementById("token-status");
-            if (valor.trim().length > 10) {
-                localStorage.setItem("token", valor.trim());
-                statusLabel.innerText = "JWT INJETADO";
-                statusLabel.className = "text-[#3DDC84] font-bold";
-                carregarSolicitacoes();
-            } else {
-                statusLabel.innerText = "JWT AUSENTE";
-                statusLabel.className = "text-red-400 font-bold";
-            }
-        }
-
-        async function carregarSolicitacoes() {
-            const token = obterTokenAutenticacao();
-            const container = document.getElementById("lista-solicitacoes");
-
-            if (!token) {
-                container.innerHTML = `
-                    <div class="text-center py-8 px-4 border border-dashed border-red-500/30 rounded-lg bg-red-500/5">
-                        <p class="text-xs text-red-400 font-bold uppercase mb-2">Acesso Negado pelo Backend (Erro 401)</p>
-                        <p class="text-[11px] text-gray-400">Por favor, cole o token gerado pelo login no campo de autenticação.</p>
-                    </div>`;
+            if (ordens.length === 0) {
+                container.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">Nenhuma solicitação encontrada no momento.</p>`;
                 return;
             }
 
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/solicitacoes`, {
-                    method: "GET",
-                    headers: {
-                        "Authorization": `Bearer ${token}`,
-                        "Content-Type": "application/json"
-                    }
-                });
-                
-                if (response.status === 401 || response.status === 403) throw new Error("TOKEN_INVALIDO");
-                if (!response.ok) throw new Error("ERRO_DE_REDE");
-                
-                const ordens = await response.json();
-                container.innerHTML = "";
+            let pendentes = 0, emAndamento = 0;
 
-                if (ordens.length === 0) {
-                    container.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">Nenhuma solicitação encontrada no momento.</p>`;
-                    return;
-                }
+            ordens.forEach(ordem => {
+                const statusOS = (ordem.status || "").toUpperCase();
+                if (statusOS === 'PENDENTE') pendentes++;
+                if (statusOS === 'ACEITO' || statusOS === 'EM_ANDAMENTO' || statusOS === 'ACEITA') emAndamento++;
 
-                let pendentes = 0, emAndamento = 0;
+                const descricaoServico = ordem.servico ? ordem.servico.nome : (ordem.descricao || "Serviço Geral de Dedetização");
+                const nomeCliente = ordem.cliente ? ordem.cliente.nome : "Cliente Não Informado";
+                const clienteId = ordem.cliente ? ordem.cliente.id : null;
+                const dataAgendada = ordem.dataAgendamento || "Data flexível";
 
-                ordens.forEach(ordem => {
-                    const statusOS = (ordem.status || "").toUpperCase();
-                    if (statusOS === 'PENDENTE') pendentes++;
-                    if (statusOS === 'ACEITO' || statusOS === 'EM_ANDAMENTO' || statusOS === 'ACEITA') emAndamento++;
+                let statusBadge = '';
+                let acaoBtn = '';
 
-                    const descricaoServico = ordem.servico ? ordem.servico.nome : (ordem.descricao || "Serviço Geral de Dedetização");
-                    const nomeCliente = ordem.cliente ? ordem.cliente.nome : "Cliente Não Informado";
-                    const clienteId = ordem.cliente ? ordem.cliente.id : null;
-                    const dataAgendada = ordem.dataAgendamento || "Data flexível";
-
-                    let statusBadge = '';
-                    let acaoBtn = '';
-
-                    if (statusOS === 'PENDENTE') {
-                        statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">PENDENTE</span>`;
-                        if (clienteId) {
-                            acaoBtn = `
-                                <button onclick="aceitarOrdemEmpresa(${clienteId}, ${ordem.id})" class="mt-3 w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold text-xs py-1.5 px-3 rounded transition flex items-center justify-center gap-1">
-                                    🤝 ACEITAR SOLICITAÇÃO
-                                </button>`;
-                        }
-                    } else {
-                        statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-[#3DDC84]/10 text-[#3DDC84] border border-[#3DDC84]/20">EM CAMPO</span>`;
+                if (statusOS === 'PENDENTE') {
+                    statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">PENDENTE</span>`;
+                    if (clienteId) {
                         acaoBtn = `
-                            <button onclick="conectarRastreamento(${ordem.id})" class="mt-3 w-full bg-[#3DDC84] hover:bg-[#2eb369] text-black font-bold text-xs py-1.5 px-3 rounded transition flex items-center justify-center gap-1">
-                                🛰️ RASTREAR EM TEMPO REAL
+                            <button onclick="aceitarOrdemEmpresa(${clienteId}, ${ordem.id})" class="mt-3 w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold text-xs py-1.5 px-3 rounded transition flex items-center justify-center gap-1">
+                                🤝 ACEITAR SOLICITAÇÃO
                             </button>`;
                     }
-
-                    const card = document.createElement("div");
-                    card.id = `card-os-${ordem.id}`;
-                    card.className = `neon-border bg-[#0d1117] p-4 rounded-lg flex flex-col justify-between cursor-pointer ${activeTrackingId === ordem.id ? 'active' : ''}`;
-                    card.innerHTML = `
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-xs font-bold text-gray-400">OS #${ordem.id}</span>
-                            ${statusBadge}
-                        </div>
-                        <h3 class="text-white font-bold text-sm tracking-wide uppercase">${descricaoServico}</h3>
-                        <p class="text-xs text-gray-400 mt-1"><b class="text-gray-500">Cliente:</b> ${nomeCliente}</p>
-                        <p class="text-xs text-gray-400 mt-0.5"><b class="text-gray-500">Agenda:</b> ${dataAgendada}</p>
-                        ${acaoBtn}
-                    `;
-                    container.appendChild(card);
-                });
-
-                document.getElementById("counter-pendente").innerText = pendentes;
-                document.getElementById("counter-andamento").innerText = emAndamento;
-
-            } catch (error) {
-                console.error("Falha ao sincronizar dados:", error);
-                if (error.message === "TOKEN_INVALIDO") {
-                    container.innerHTML = `
-                        <div class="text-center py-8 px-4 border border-dashed border-red-500/30 rounded-lg bg-red-500/5">
-                            <p class="text-xs text-red-400 font-bold uppercase mb-2">Sessão Expirada ou Token Inválido</p>
-                            <p class="text-[11px] text-gray-400">Atualize com um novo Token JWT válido.</p>
-                        </div>`;
                 } else {
-                    container.innerHTML = `<p class="text-sm text-red-400 text-center py-6">Falha crítica ao conectar com a API Render.</p>`;
+                    statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-[#3DDC84]/10 text-[#3DDC84] border border-[#3DDC84]/20">EM CAMPO</span>`;
+                    acaoBtn = `
+                        <button onclick="conectarRastreamento(${ordem.id})" class="mt-3 w-full bg-[#3DDC84] hover:bg-[#2eb369] text-black font-bold text-xs py-1.5 px-3 rounded transition flex items-center justify-center gap-1">
+                            🛰️ RASTREAR EM TEMPO REAL
+                        </button>`;
                 }
-            }
-        }
 
-        // 🔥 FLUXO DE ACEITAÇÃO REAL-TIME (CHAMA O NOTIFICATION CONTROLLER)
-        async function aceitarOrdemEmpresa(clienteId, ordemId) {
-            const token = obterTokenAutenticacao();
-            if(!confirm(`Deseja aceitar a Ordem de Serviço #${ordemId} e notificar o cliente?`)) return;
-
-            logTerminal(`Enviando comando de aceitação para OS #${ordemId}...`);
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/notifications/trigger-acceptance?clienteId=${clienteId}&ordemId=${ordemId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (!response.ok) throw new Error("Erro na requisição de aceitação");
-                
-                logTerminal(`Sucesso! OS #${ordemId} ativa. Disparo STOMP/FCM injetado.`);
-                alert(`Ordem #${ordemId} aceita com sucesso! Cliente notificado.`);
-                carregarSolicitacoes();
-            } catch (error) {
-                console.error(error);
-                alert("Falha ao processar aceitação da Ordem.");
-            }
-        }
-
-        function conectarRastreamento(idOrdem) {
-            if (activeTrackingId) {
-                document.getElementById(`card-os-${activeTrackingId}`)?.classList.remove('active');
-            }
-            activeTrackingId = idOrdem;
-            document.getElementById(`card-os-${idOrdem}`)?.classList.add('active');
-            document.getElementById("os-tracking-id").innerText = `[ MONITORANDO OS #${idOrdem} ]`;
-
-            if (stompClient && stompClient.connected) {
-                stompClient.disconnect(() => {
-                    logTerminal(`Conexão anterior encerrada. Pivotando para nova OS #${idOrdem}`);
-                    abrirCanalWebSocket(idOrdem);
-                });
-            } else {
-                abrirCanalWebSocket(idOrdem);
-            }
-        }
-
-        function abrirCanalWebSocket(idOrdem) {
-            logTerminal(`Inicializando handshake com gateway WebSocket...`);
-            document.getElementById("ws-status").innerText = "CONECTANDO...";
-            document.getElementById("ws-status").className = "text-yellow-500 font-bold";
-
-            // 🚀 ALINHADO: Endpoint correto configurado no seu WebSocketConfig.java do Spring
-            const socket = new SockJS(`${API_BASE_URL}/ws-pestcontrol-sockjs`);
-            stompClient = Stomp.over(socket);
-            stompClient.debug = null;
-
-            const token = obterTokenAutenticacao();
-            const headers = { "Authorization": `Bearer ${token}` };
-
-            stompClient.connect(headers, function (frame) {
-                document.getElementById("ws-status").innerText = "SINAL ATIVO";
-                document.getElementById("ws-status").className = "text-[#3DDC84] font-bold";
-                logTerminal(`Pipeline linkado com sucesso para OS #${idOrdem}`);
-
-                stompClient.subscribe(`/topic/gps/${idOrdem}`, function (response) {
-                    try {
-                        const dadosGps = JSON.parse(response.body);
-                        atualizarPosicaoMapa(dadosGps.latitude, dadosGps.longitude, idOrdem);
-                    } catch (e) {
-                        logTerminal(`Erro ao processar payload de coordenadas.`);
-                    }
-                }, headers);
-            }, function (error) {
-                document.getElementById("ws-status").innerText = "QUEDA DE SINAL";
-                document.getElementById("ws-status").className = "text-red-500 font-bold";
-                logTerminal(`Erro no barramento de dados: ${error}`);
-            });
-        }
-
-        function atualizarPosicaoMapa(lat, lng, idOrdem) {
-            const Glen = [lat, lng];
-            logTerminal(`Coordenadas recebidas via satélite: Lat ${lat.toFixed(5)} | Lng ${lng.toFixed(5)}`);
-
-            const pulseIcon = L.divIcon({
-                className: 'gps-pulse-icon',
-                iconSize: [16, 16]
+                const card = document.createElement("div");
+                card.id = `card-os-${ordem.id}`;
+                card.className = `neon-border bg-[#0d1117] p-4 rounded-lg flex flex-col justify-between cursor-pointer ${activeTrackingId === ordem.id ? 'active' : ''}`;
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-xs font-bold text-gray-400">OS #${ordem.id}</span>
+                        ${statusBadge}
+                    </div>
+                    <h3 class="text-white font-bold text-sm tracking-wide uppercase">${descricaoServico}</h3>
+                    <p class="text-xs text-gray-400 mt-1"><b class="text-gray-500">Cliente:</b> ${nomeCliente}</p>
+                    <p class="text-xs text-gray-400 mt-0.5"><b class="text-gray-500">Agenda:</b> ${dataAgendada}</p>
+                    ${acaoBtn}
+                `;
+                container.appendChild(card);
             });
 
-            if (currentMarker) {
-                currentMarker.setLatLng(Glen);
+            document.getElementById("counter-pendente").innerText = pendentes;
+            document.getElementById("counter-andamento").innerText = emAndamento;
+
+        } catch (error) {
+            console.error("Falha ao sincronizar dados:", error);
+            if (error.message === "TOKEN_INVALIDO") {
+                container.innerHTML = `
+                    <div class="text-center py-8 px-4 border border-dashed border-red-500/30 rounded-lg bg-red-500/5">
+                        <p class="text-xs text-red-400 font-bold uppercase mb-2">Sessão Expirada ou Token Inválido</p>
+                        <p class="text-[11px] text-gray-400">Atualize com um novo Token JWT válido.</p>
+                    </div>`;
             } else {
-                currentMarker = L.marker(Glen, { icon: pulseIcon }).addTo(map);
+                container.innerHTML = `<p class="text-sm text-red-400 text-center py-6">Falha crítica ao conectar com a API Render.</p>`;
             }
-
-            map.flyTo(Glen, 16, { animate: true, duration: 1.5 });
-            currentMarker.bindPopup(`<b class="text-black">Técnico PestControlX</b><br>Monitorando OS #${idOrdem}`).openPopup();
         }
+    }
 
-        function logTerminal(mensagem) {
-            const logBox = document.getElementById("terminal-log");
-            const timestamp = new Date().toLocaleTimeString();
-            const logItem = document.createElement("span");
-            logItem.className = "block text-gray-300";
-            logItem.innerHTML = `<span class="text-gray-600">[${timestamp}]</span> > ${mensagem}`;
-            logBox.insertBefore(logItem, logBox.firstChild);
-        }
+    // 🔥 FLUXO DE ACEITAÇÃO REAL-TIME: Dispara o STOMP no Backend que avisa o App
+    async function aceitarOrdemEmpresa(clienteId, ordemId) {
+        const token = obterTokenAutenticacao();
+        if(!confirm(`Deseja aceitar a Ordem de Serviço #${ordemId} e notificar o cliente no App?`)) return;
 
-        window.onload = () => {
-            initMap();
-            const tokenSalvo = localStorage.getItem("token") || localStorage.getItem("jwt");
-            if (tokenSalvo) {
-                document.getElementById("jwt-input").value = tokenSalvo;
-                const statusLabel = document.getElementById("token-status");
-                statusLabel.innerText = "JWT RESTAURADO";
-                statusLabel.className = "text-[#3DDC84] font-bold";
-            }
+        logTerminal(`Enviando comando de aceitação para OS #${ordemId}...`);
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/notifications/trigger-acceptance?clienteId=${clienteId}&ordemId=${ordemId}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) throw new Error("Erro na requisição de aceitação");
+            
+            logTerminal(`Sucesso! OS #${ordemId} ativa. Disparo STOMP/FCM injetado.`);
+            alert(`Ordem #${ordemId} aceita com sucesso! O pop-up deve aparecer no celular do cliente.`);
             carregarSolicitacoes();
-            setInterval(carregarSolicitacoes, 30000);
-        };
-    </script>
+        } catch (error) {
+            console.error(error);
+            alert("Falha ao processar aceitação da Ordem.");
+        }
+    }
+
+    function conectarRastreamento(idOrdem) {
+        if (activeTrackingId) {
+            document.getElementById(`card-os-${activeTrackingId}`)?.classList.remove('active');
+        }
+        activeTrackingId = idOrdem;
+        document.getElementById(`card-os-${idOrdem}`)?.classList.add('active');
+        document.getElementById("os-tracking-id").innerText = `[ MONITORANDO OS #${idOrdem} ]`;
+
+        if (stompClient && stompClient.connected) {
+            stompClient.disconnect(() => {
+                logTerminal(`Conexão anterior encerrada. Pivotando para nova OS #${idOrdem}`);
+                abrirCanalWebSocket(idOrdem);
+            });
+        } else {
+            abrirCanalWebSocket(idOrdem);
+        }
+    }
+
+    function abrirCanalWebSocket(idOrdem) {
+        logTerminal(`Inicializando handshake com gateway WebSocket...`);
+        document.getElementById("ws-status").innerText = "CONECTANDO...";
+        document.getElementById("ws-status").className = "text-yellow-500 font-bold";
+
+        const socket = new SockJS(`${API_BASE_URL}/ws-pestcontrol-sockjs`);
+        stompClient = Stomp.over(socket);
+        stompClient.debug = null;
+
+        const token = obterTokenAutenticacao();
+        const headers = { "Authorization": `Bearer ${token}` };
+
+        stompClient.connect(headers, function (frame) {
+            document.getElementById("ws-status").innerText = "SINAL ATIVO";
+            document.getElementById("ws-status").className = "text-[#3DDC84] font-bold";
+            logTerminal(`Pipeline linkado com sucesso para OS #${idOrdem}`);
+
+            stompClient.subscribe(`/topic/gps/${idOrdem}`, function (response) {
+                try {
+                    const dadosGps = JSON.parse(response.body);
+                    atualizarPosicaoMapa(dadosGps.latitude, dadosGps.longitude, idOrdem);
+                } catch (e) {
+                    logTerminal(`Erro ao processar payload de coordenadas.`);
+                }
+            }, headers);
+        }, function (error) {
+            document.getElementById("ws-status").innerText = "QUEDA DE SINAL";
+            document.getElementById("ws-status").className = "text-red-500 font-bold";
+            logTerminal(`Erro no barramento de dados: ${error}`);
+        });
+    }
+
+    function atualizarPosicaoMapa(lat, lng, idOrdem) {
+        const Glen = [lat, lng];
+        logTerminal(`Coordenadas recebidas via satélite: Lat ${lat.toFixed(5)} | Lng ${lng.toFixed(5)}`);
+
+        const pulseIcon = L.divIcon({
+            className: 'gps-pulse-icon',
+            iconSize: [16, 16]
+        });
+
+        if (currentMarker) {
+            currentMarker.setLatLng(Glen);
+        } else {
+            currentMarker = L.marker(Glen, { icon: pulseIcon }).addTo(map);
+        }
+
+        map.flyTo(Glen, 16, { animate: true, duration: 1.5 });
+        currentMarker.bindPopup(`<b class="text-black">Técnico PestControlX</b><br>Monitorando OS #${idOrdem}`).openPopup();
+    }
+
+    function logTerminal(mensagem) {
+        const logBox = document.getElementById("terminal-log");
+        const timestamp = new Date().toLocaleTimeString();
+        const logItem = document.createElement("span");
+        logItem.className = "block text-gray-300";
+        logItem.innerHTML = `<span class="text-gray-600">[${timestamp}]</span> > ${mensagem}`;
+        logBox.insertBefore(logItem, logBox.firstChild);
+    }
+
+    window.onload = () => {
+        initMap();
+        const tokenSalvo = localStorage.getItem("token") || localStorage.getItem("jwt");
+        if (tokenSalvo) {
+            document.getElementById("jwt-input").value = tokenSalvo;
+            const statusLabel = document.getElementById("token-status");
+            statusLabel.innerText = "JWT RESTAURADO";
+            statusLabel.className = "text-[#3DDC84] font-bold";
+        }
+        carregarSolicitacoes();
+        setInterval(carregarSolicitacoes, 30000);
+    };
+</script>
 </body>
 </html>
