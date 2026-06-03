@@ -2,53 +2,98 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PestControlX - Nova Ordem de Serviço</title>
     <style>
+        /* Tema Clean Corporativo: Branco e Verde */
         body {
-            background-color: #0A0F1D;
-            color: #FFFFFF;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding: 40px;
+            background-color: #F4F6F9;
+            color: #333333;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            padding: 40px 20px;
+            margin: 0;
         }
         .container {
-            max-width: 600px;
+            max-width: 550px;
             margin: 0 auto;
-            background: #111E30;
-            padding: 30px;
-            border-radius: 8px;
-            border: 2px solid #00F0FF;
-            box-shadow: 0 0 15px #00F0FF;
+            background: #FFFFFF;
+            padding: 35px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border-top: 6px solid #2E7D32; /* Barra superior verde */
         }
-        h2 { color: #00F0FF; text-shadow: 0 0 5px #00F0FF; }
-        label { display: block; margin-top: 15px; font-weight: bold; color: #A0AEC0; }
+        h2 { 
+            color: #2E7D32; 
+            margin-top: 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        p {
+            color: #666666;
+            font-size: 14px;
+            margin-bottom: 25px;
+        }
+        label { 
+            display: block; 
+            margin-top: 18px; 
+            font-weight: 600; 
+            color: #4A5568;
+            font-size: 14px;
+        }
         input, select, textarea {
-            width: 100%; padding: 10px; margin-top: 5px;
-            background-color: #0A0F1D; border: 1px solid #00F0FF;
-            color: white; border-radius: 4px; box-sizing: border-box;
+            width: 100%; 
+            padding: 12px; 
+            margin-top: 6px;
+            background-color: #FAFAFA; 
+            border: 1px solid #CBD5E0;
+            color: #2D3748; 
+            border-radius: 6px; 
+            box-sizing: border-box;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        input[readonly] {
+            background-color: #E2E8F0;
+            color: #4A5568;
+            cursor: not-allowed;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #2E7D32;
+            background-color: #FFFFFF;
         }
         button {
-            width: 100%; padding: 12px; margin-top: 25px;
-            background-color: #00F0FF; border: none; color: #0A0F1D;
-            font-weight: bold; font-size: 16px; cursor: pointer;
-            border-radius: 4px; box-shadow: 0 0 10px #00F0FF;
+            width: 100%; 
+            padding: 14px; 
+            margin-top: 30px;
+            background-color: #2E7D32; 
+            border: none; 
+            color: #FFFFFF;
+            font-weight: bold; 
+            font-size: 16px; 
+            cursor: pointer;
+            border-radius: 6px; 
+            transition: background-color 0.2s;
         }
-        button:hover { background-color: #00B3CC; }
+        button:hover { 
+            background-color: #1B5E20; 
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>📝 GERAÇÃO DE ORDEM DE SERVIÇO</h2>
-    <p>Preencha os dados abaixo para despachar a equipe técnica em campo.</p>
+    <h2>📝 REGISTRO DE ORDEM DE SERVIÇO</h2>
+    <p>Preencha os dados técnicos abaixo para registrar a ocorrência no painel operacional.</p>
     
     <form id="formOrdem">
-        <label>ID do Cliente (Coletado Automaticamente)</label>
+        <label>Código de Identificação do Cliente</label>
         <input type="text" id="clienteId" readonly>
 
-        <label>ID da Empresa</label>
+        <label>Código da Empresa Vinculada</label>
         <input type="text" id="empresaId" readonly>
 
-        <label>Tipo de Vetor / Praga Relatada</label>
+        <label>Vetor Biológico Identificado</label>
         <select id="pragaAlvo">
             <option value="BARATA">Blatella germanica (Baratas)</option>
             <option value="ROEDOR">Rattus norvegicus (Roedores)</option>
@@ -56,8 +101,8 @@
             <option value="CUPIM">Coptotermes gestroi (Cupins)</option>
         </select>
 
-        <label>Descrição Crítica do Local / Sintomas</label>
-        <textarea id="descricao" rows="4" placeholder="Ex: Foco detectado no subsolo da cozinha industrial..."></textarea>
+        <label>Descrição Detalhada do Diagnóstico Técnico</label>
+        <textarea id="descricao" rows="4" placeholder="Descreva as condições estruturais, focos encontrados e nível da infestação..."></textarea>
 
         <button type="submit">DESPACHAR ORDEM DE SERVIÇO</button>
     </form>
