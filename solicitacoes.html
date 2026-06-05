@@ -223,25 +223,30 @@
 
             ordens.forEach(ordem => {
                 const statusOS = (ordem.status || "").toUpperCase();
-                if (statusOS === 'PENDENTE') pendentes++;
-                if (statusOS === 'ACEITO' || statusOS === 'EM_ANDAMENTO' || statusOS === 'ACEITA') emAndamento++;
+                
+                // 🔥 CORREÇÃO CRÍTICA: Se for PENDENTE ou ABERTA, incrementa pendentes
+                if (statusOS === 'PENDENTE' || statusOS === 'ABERTA') {
+                    pendentes++;
+                } else if (statusOS === 'ACEITO' || statusOS === 'EM_ANDAMENTO' || statusOS === 'ACEITA') {
+                    emAndamento++;
+                }
 
-                const descricaoServico = ordem.servico ? ordem.servico.nome : (ordem.descricao || "Serviço Geral de Dedetização");
-                const nomeCliente = ordem.cliente ? ordem.cliente.nome : "Cliente Não Informado";
-                const clienteId = ordem.cliente ? ordem.cliente.id : null;
-                const dataAgendada = ordem.dataAgendamento || "Data flexível";
+                // Fallbacks inteligentes para bater com o payload do seu ordem.js
+                const descricaoServico = ordem.pragaAlvo || (ordem.servico ? ordem.servico.nome : (ordem.descricao || "Manejo de Pragas"));
+                const nomeCliente = ordem.cliente ? ordem.cliente.nome : `Cliente ID: ${ordem.clienteId || 'Não Informado'}`;
+                const dataAgendada = ordem.dataAgendamento || "Data flexível (Imediato)";
 
                 let statusBadge = '';
                 let acaoBtn = '';
 
-                if (statusOS === 'PENDENTE') {
-                    statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">PENDENTE</span>`;
-                    if (clienteId) {
-                        acaoBtn = `
-                            <button onclick="visualizarEMontarOrdem(${JSON.stringify(ordem).replace(/"/g, '&quot;')})" class="mt-3 w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold text-xs py-1.5 px-3 rounded transition flex items-center justify-center gap-1">
-                                🤝 ANALISAR & ACEITAR O.S.
-                            </button>`;
-                    }
+                // 🔥 CORREÇÃO CRÍTICA: Captura tanto "PENDENTE" quanto "ABERTA" vindas do App
+                if (statusOS === 'PENDENTE' || statusOS === 'ABERTA') {
+                    statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">ABERTA / PENDENTE</span>`;
+                    
+                    acaoBtn = `
+                        <button onclick="visualizarEMontarOrdem(${JSON.stringify(ordem).replace(/"/g, '&quot;')})" class="mt-3 w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold text-xs py-1.5 px-3 rounded transition flex items-center justify-center gap-1">
+                            🤝 ANALISAR & ACEITAR O.S.
+                        </button>`;
                 } else {
                     statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-[#3DDC84]/10 text-[#3DDC84] border border-[#3DDC84]/20">EM CAMPO</span>`;
                     acaoBtn = `
@@ -259,7 +264,8 @@
                         ${statusBadge}
                     </div>
                     <h3 class="text-white font-bold text-sm tracking-wide uppercase">${descricaoServico}</h3>
-                    <p class="text-xs text-gray-400 mt-1"><b class="text-gray-500">Cliente:</b> ${nomeCliente}</p>
+                    <p class="text-xs text-gray-400 mt-1"><b class="text-gray-500">Alvo:</b> ${ordem.descricao || 'Foco não detalhado'}</p>
+                    <p class="text-xs text-gray-400 mt-0.5"><b class="text-gray-500">Cliente:</b> ${nomeCliente}</p>
                     <p class="text-xs text-gray-400 mt-0.5"><b class="text-gray-500">Agenda:</b> ${dataAgendada}</p>
                     ${acaoBtn}
                 `;
@@ -289,26 +295,28 @@
         const endereco = cliente.endereco || "Não Informado";
         const telefone = cliente.telefone || "Não Informado";
         const email = cliente.email || "Não Informado";
-        const focoPraga = ordem.descricao || "Não discriminado pelo triagem PestBot";
+        const focoPraga = ordem.descricao || "Não discriminado pela triagem";
+        
+        // Proteção extra para capturar o ID do cliente enviado de forma plana ou aninhada
+        const idDoClienteFinal = cliente.id || ordem.clienteId || "34";
 
-        // Injeta a estrutura completa em um container/modal do seu painel corporativo
         const detalheContainer = document.getElementById("visualizador-os-completa");
         if(detalheContainer) {
             detalheContainer.innerHTML = `
                 <div class="border border-[#3DDC84]/30 bg-[#0d1117] p-6 rounded-lg text-white">
                     <div class="flex justify-between items-center border-b border-gray-800 pb-3 mb-4">
                         <h2 class="text-md font-bold text-[#3DDC84]">CONSOLE DE INFRAESTRUTURA - OS #${ordem.id}</h2>
-                        <span class="text-xs bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded font-mono">STATUS: PENDENTE</span>
+                        <span class="text-xs bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded font-mono">STATUS: ${ordem.status}</span>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                         <div>
                             <p class="text-gray-500 font-bold uppercase tracking-wider">Dados Cadastrais do Cliente</p>
-                            <p class="mt-2 text-sm text-white font-bold">${cliente.nome || 'Nome não localizado'}</p>
+                            <p class="mt-2 text-sm text-white font-bold">${cliente.nome || 'Cliente ID: ' + idDoClienteFinal}</p>
                             <p class="text-gray-400">Contatos: ${telefone} | ${email}</p>
                         </div>
                         <div>
                             <p class="text-gray-500 font-bold uppercase tracking-wider">Vetor Biológico & Alvo</p>
-                            <p class="mt-2 text-sm text-red-400 font-bold uppercase">${ordem.servico ? ordem.servico.nome : 'Manejo Geral'}</p>
+                            <p class="mt-2 text-sm text-red-400 font-bold uppercase">${ordem.pragaAlvo || 'Manejo Geral'}</p>
                             <p class="text-gray-400">Triagem do Foco: ${focoPraga}</p>
                         </div>
                     </div>
@@ -317,18 +325,16 @@
                         <p class="text-gray-300 mt-1">${endereco}</p>
                     </div>
                     <div class="mt-6 flex gap-2">
-                        <button onclick="aceitarOrdemEmpresa(${cliente.id}, ${ordem.id})" class="flex-1 bg-[#3DDC84] hover:bg-[#32b86e] text-black font-bold py-2 rounded text-xs transition">
+                        <button onclick="aceitarOrdemEmpresa(${idDoClienteFinal}, ${ordem.id})" class="flex-1 bg-[#3DDC84] hover:bg-[#32b86e] text-black font-bold py-2 rounded text-xs transition">
                             ⚡ CONFIRMAR E ROTEAR AGORA
                         </button>
                     </div>
                 </div>
             `;
-            // Rola até o visualizador da O.S.
             detalheContainer.scrollIntoView({ behavior: 'smooth' });
         } else {
-            // Fallback caso não possua a div de renderização dedicada
-            if(confirm(`Ordem #${ordem.id}\nCliente: ${cliente.nome}\nEndereço: ${endereco}\n\nDeseja confirmar o roteamento desta O.S.?`)) {
-                aceitarOrdemEmpresa(cliente.id, ordem.id);
+            if(confirm(`Ordem #${ordem.id}\nCliente ID: ${idDoClienteFinal}\n\nDeseja confirmar o roteamento desta O.S.?`)) {
+                aceitarOrdemEmpresa(idDoClienteFinal, ordem.id);
             }
         }
     }
@@ -351,9 +357,8 @@
             logTerminal(`Sucesso! OS #${ordemId} ativa. Disparo STOMP efetuado com sucesso.`);
             alert(`Ordem #${ordemId} aceita com sucesso! O pop-up em tempo real foi enviado ao cliente.`);
             
-            // Limpa o painel de visualização de O.S.
             const detalheContainer = document.getElementById("visualizador-os-completa");
-            if(detalheContainer) detalheContainer.innerHTML = `<p class="text-xs text-gray-600 italic">Selecione uma ordem pendente para inspeção de telemetria.</p>`;
+            if(detalheContainer) detalheContainer.innerHTML = `<p class="text-xs text-gray-600 italic">Selecione uma ordem aberta para inspeção de telemetria.</p>`;
             
             carregarSolicitacoes();
         } catch (error) {
@@ -433,6 +438,7 @@
 
     function logTerminal(mensagem) {
         const logBox = document.getElementById("terminal-log");
+        if(!logBox) return;
         const timestamp = new Date().toLocaleTimeString();
         const logItem = document.createElement("span");
         logItem.className = "block text-gray-300";
