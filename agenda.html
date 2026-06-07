@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Agenda Técnico</title>
+
+<link rel="stylesheet" href="css/agenda.css">
+</head>
+<body>
+
+<div class="card">
+
+<h1>Agendar Visita</h1>
+
+<label>Data da execução</label>
+
+<input type="date" id="data">
+
+<button onclick="agendar()">
+Salvar Agendamento
+</button>
+
+<div id="status" class="status"></div>
+
+</div>
+<script>
+
+const API =
+"https://appdedetizacao.onrender.com";
+
+async function agendar(){
+
+    const ordemId =
+    localStorage.getItem("ordemId");
+
+    const clienteId =
+    localStorage.getItem("clienteId");
+
+    const funcionarioId =
+    localStorage.getItem("funcionarioId");
+
+    if(!ordemId || !clienteId || !funcionarioId){
+
+        document.getElementById("status")
+        .innerHTML =
+        "Nenhuma OS selecionada";
+
+        return;
+    }
+
+    const dto = {
+
+        ordemId:Number(ordemId),
+
+        clienteId:Number(clienteId),
+
+        funcionarioId:Number(funcionarioId),
+
+        servicoId:1,
+
+        data:
+        document.getElementById("data").value
+    };
+
+    console.log(dto);
+
+    const resposta =
+    await fetch(API + "/agendamentos",{
+
+        method:"POST",
+
+        headers:{
+            "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify(dto)
+    });
+
+    if(resposta.ok){
+
+        document.getElementById("status")
+        .innerHTML =
+        "Agendamento realizado com sucesso";
+
+    }else{
+
+        document.getElementById("status")
+        .innerHTML =
+        "Erro ao criar agendamento";
+    }
+}
+
+</script>
+
+</body>
+</html>

@@ -124,6 +124,10 @@
                     <p class="text-sm text-gray-500 animate-pulse text-center py-8">Aguardando injeção do Token de segurança...</p>
                 </div>
             </div>
+            
+            <div id="visualizador-os-completa" class="mt-2">
+                <p class="text-xs text-gray-600 italic">Selecione uma ordem aberta para inspeção de telemetria.</p>
+            </div>
         </section>
 
         <section class="lg:grid-cols-1 lg:col-span-7 flex flex-col gap-4">
@@ -158,7 +162,7 @@
     let activeTrackingId = null;
 
     function initMap() {
-        map = L.map('map').setView([-23.45, -46.73], 12);
+        map = L.map('map').setView([-23.4456, -46.7234], 12);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; OpenStreetMap &copy; CARTO',
             subdomains: 'abcd',
@@ -230,8 +234,8 @@
                 }
 
                 const descricaoServico = ordem.pragaAlvo || (ordem.servico ? ordem.servico.nome : (ordem.descricao || "Manejo de Pragas"));
-                const nomeCliente = ordem.cliente ? ordem.cliente.nome : `Cliente ID: ${ordem.clienteId || 'Não Informado'}`;
-                const dataAgendada = ordem.dataAgendamento || "Data flexível (Imediato)";
+                const nomeCliente = ordem.nomeCliente || `Cliente ID: ${ordem.clienteId || '34'}`;
+                const dataAgendada = "Data flexível (Imediato)";
 
                 let statusBadge = '';
                 let acaoBtn = '';
@@ -272,63 +276,81 @@
 
         } catch (error) {
             console.error("Falha ao sincronizar dados:", error);
-            if (error.message === "TOKEN_INVALIDO") {
-                container.innerHTML = `
-                    <div class="text-center py-8 px-4 border border-dashed border-red-500/30 rounded-lg bg-red-500/5">
-                        <p class="text-xs text-red-400 font-bold uppercase mb-2">Sessão Expirada ou Token Inválido</p>
-                        <p class="text-[11px] text-gray-400">Atualize com um novo Token JWT válido.</p>
-                    </div>`;
-            } else {
-                container.innerHTML = `<p class="text-sm text-red-400 text-center py-6">Falha crítica ao conectar com a API Render.</p>`;
-            }
+            container.innerHTML = `<p class="text-sm text-red-400 text-center py-6">Falha crítica ao conectar com a API Render.</p>`;
         }
     }
 
     function visualizarEMontarOrdem(ordem) {
-        const cliente = ordem.cliente || {};
-        const endereco = cliente.endereco || "Não Informado";
-        const telefone = cliente.telefone || "Não Informado";
-        const email = cliente.email || "Não Informado";
         const focoPraga = ordem.descricao || "Não discriminado pela triagem";
-        
-        const idDoClienteFinal = cliente.id || ordem.clienteId || "34";
+        const idDoClienteFinal = ordem.clienteId || "34";
+        const nomeDoClienteFinal = ordem.nomeCliente || "Daniel Santos";
 
         const detalheContainer = document.getElementById("visualizador-os-completa");
         if(detalheContainer) {
-            // [...] Lógica visual mantida
+            detalheContainer.innerHTML = `
+                <div class="border border-[#3DDC84]/30 bg-[#161b22] p-6 rounded-lg text-white mt-4">
+                    <div class="flex justify-between items-center border-b border-gray-800 pb-3 mb-4">
+                        <h2 class="text-md font-bold text-[#3DDC84]">CONSOLE DE INFRAESTRUTURA - OS #${ordem.id}</h2>
+                        <span class="text-xs bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded font-mono">STATUS: PENDENTE</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                        <div>
+                            <p class="text-gray-500 font-bold uppercase tracking-wider">Dados Cadastrais do Cliente</p>
+                            <p class="mt-2 text-sm text-white font-bold">${nomeDoClienteFinal}</p>
+                            <p class="text-gray-400">ID Operacional: # ${idDoClienteFinal}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 font-bold uppercase tracking-wider">Vetor Biológico & Alvo</p>
+                            <p class="mt-2 text-sm text-red-400 font-bold uppercase">${ordem.pragaAlvo || 'BARATAS'}</p>
+                            <p class="text-gray-400">Triagem: ${focoPraga}</p>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex gap-2">
+                        <button onclick="aceitarOrdemEmpresa(${ordem.id})" class=" anonymity-btn w-full bg-[#3DDC84] hover:bg-[#32b86e] text-black font-bold py-2 rounded text-xs transition">
+                            ⚡ CONFIRMAR E ROTEAR AGORA
+                        </button>
+                    </div>
+                </div>
+            `;
             detalheContainer.scrollIntoView({ behavior: 'smooth' });
-        } else {
-            if(confirm(`Ordem #${ordem.id}\nCliente ID: ${idDoClienteFinal}\n\nDeseja confirmar o roteamento desta O.S.?`)) {
-                aceitarOrdemEmpresa(ordem.id);
-            }
         }
     }
 
-    // 🔥 CORREÇÃO DE INTEGRAÇÃO WEB: Apontando para o endpoint real PUT do Spring Boot
-    async function aceitarOrdemEmpresa(ordemId) {
-        const token = obterTokenAutenticacao();
-        logTerminal(`Enviando comando de aceitação para OS #${ordemId}...`);
-        
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/ordens/${ordemId}/aceitar`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+    // 🔥 ENCAIXE EXATO DE PARÂMETROS COM O SPRING BOOT CONTROLLER
+   async function aceitarOrdemEmpresa(ordemId) {
+
+    const token = obterTokenAutenticacao();
+
+    try {
+
+        const response = await fetch(
+            `${API_BASE_URL}/api/ordens/${ordemId}/aceitar?funcionarioId=99`,
+            {
+                method:"PUT",
+                headers:{
+                    "Authorization":`Bearer ${token}`,
+                    "Content-Type":"application/json"
                 }
-            });
+            }
+        );
 
-            if (!response.ok) throw new Error("Erro na requisição de aceitação");
-            
-            logTerminal(`Sucesso! OS #${ordemId} ativa. O Controller do Java efetuou o disparo STOMP.`);
-            alert(`Ordem #${ordemId} aceita com sucesso! O pop-up em tempo real foi enviado ao cliente e ao técnico.`);
-            
-            carregarSolicitacoes();
-        } catch (error) {
-            console.error(error);
-            alert("Falha ao processar aceitação da Ordem. Verifique o console.");
+        if(!response.ok){
+            throw new Error("Erro");
         }
+
+        const ordem = await response.json();
+
+        localStorage.setItem("ordemId", ordem.id);
+        localStorage.setItem("clienteId", ordem.clienteId);
+        localStorage.setItem("funcionarioId", 99);
+
+        window.location.href = "agenda.html";
+
+    } catch(e){
+        console.error(e);
+        alert("Erro ao aceitar OS");
     }
+}
 
     function conectarRastreamento(idOrdem) {
         if (activeTrackingId) {
