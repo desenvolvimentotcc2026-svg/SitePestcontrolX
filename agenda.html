@@ -1,96 +1,99 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-<head>
-<meta charset="UTF-8">
-<title>Agenda Técnico</title>
 
-<link rel="stylesheet" href="css/agenda.css">
+<head>
+    <meta charset="UTF-8">
+    <title>Agenda Técnico</title>
+
+    <link rel="stylesheet" href="css/agenda.css">
 </head>
+
 <body>
 
-<div class="card">
+    <div class="card">
 
-<h1>Agendar Visita</h1>
+        <h1>Agendar Visita</h1>
 
-<label>Data da execução</label>
+        <label>Data da execução</label>
 
-<input type="date" id="data">
+        <input type="date" id="data">
 
-<button onclick="agendar()">
-Salvar Agendamento
-</button>
+        <button onclick="agendar()">
+            Salvar Agendamento
+        </button>
 
-<div id="status" class="status"></div>
+        <div id="status" class="status"></div>
 
-</div>
-<script>
+    </div>
+    <script>
 
-const API =
-"https://appdedetizacao.onrender.com";
+        const API =
+            "https://appdedetizacao.onrender.com";
 
-async function agendar(){
+        async function agendar() {
 
-    const ordemId =
-    localStorage.getItem("ordemId");
+            const ordemId =
+                localStorage.getItem("ordemId");
 
-    const clienteId =
-    localStorage.getItem("clienteId");
+            const clienteId =
+                localStorage.getItem("clienteId");
 
-    const funcionarioId =
-    localStorage.getItem("funcionarioId");
+            const funcionarioId =
+                localStorage.getItem("funcionarioId");
 
-    if(!ordemId || !clienteId || !funcionarioId){
+            if (!ordemId || !clienteId || !funcionarioId) {
 
-        document.getElementById("status")
-        .innerHTML =
-        "Nenhuma OS selecionada";
+                document.getElementById("status")
+                    .innerHTML =
+                    "Nenhuma OS selecionada";
 
-        return;
-    }
+                return;
+            }
 
-    const dto = {
+            const dto = {
 
-        ordemId:Number(ordemId),
+                ordemId: Number(ordemId),
 
-        clienteId:Number(clienteId),
+                clienteId: Number(clienteId),
 
-        funcionarioId:Number(funcionarioId),
+                funcionarioId: Number(funcionarioId),
 
-        servicoId:1,
+                servicoId: 1,
 
-        data:
-        document.getElementById("data").value
-    };
+                data:
+                    document.getElementById("data").value
+            };
 
-    console.log(dto);
+            console.log(dto);
 
-    const resposta =
-    await fetch(API + "/agendamentos",{
+            const resposta =
+                await fetch(API + "/agendamentos", {
 
-        method:"POST",
+                    method: "POST",
 
-        headers:{
-            "Content-Type":"application/json"
-        },
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
 
-        body:JSON.stringify(dto)
-    });
+                    body: JSON.stringify(dto)
+                });
 
-    if(resposta.ok){
+            if (resposta.ok) {
 
-        document.getElementById("status")
-        .innerHTML =
-        "Agendamento realizado com sucesso";
+                document.getElementById("status")
+                    .innerHTML =
+                    "Agendamento realizado com sucesso";
 
-    }else{
+            } else {
 
-        document.getElementById("status")
-        .innerHTML =
-        "Erro ao criar agendamento";
-    }
-}
+                document.getElementById("status")
+                    .innerHTML =
+                    "Erro ao criar agendamento";
+            }
+        }
 
-</script>
+    </script>
 
 </body>
+
 </html>
