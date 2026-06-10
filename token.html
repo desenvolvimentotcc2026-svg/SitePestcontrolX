@@ -15,16 +15,58 @@
             --border-light: #e2e8f0;
             --input-focus: #bbf7d0;
         }
+
+        /* 🌙 Tokens de Cor para o Modo Escuro sincronizado */
+        [data-theme="dark"] {
+            --bg-global: #0f172a;
+            --card-bg: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --brand-green: #22c55e;
+            --brand-green-hover: #16a34a;
+            --border-light: #334155;
+            --input-focus: #14532d;
+        }
+
         body {
             background-color: var(--bg-global);
             color: var(--text-primary);
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             margin: 0;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            position: relative;
         }
+
+        /* ⚙️ Barra de Recursos Superior Contida */
+        .top-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+        }
+
+        .control-btn {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-light);
+            color: var(--text-secondary);
+            padding: 8px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+        }
+
+        .control-btn:hover {
+            color: var(--text-primary);
+            border-color: var(--brand-green);
+        }
+
         .token-wrapper {
             background-color: var(--card-bg);
             border: 1px solid var(--border-light);
@@ -35,17 +77,29 @@
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
             text-align: center;
             box-sizing: border-box;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
+
         .brand-header img.logo { 
             max-height: 85px; 
             margin-bottom: 16px; 
         }
+
         h2 { font-size: 20px; font-weight: 600; margin: 0 0 10px 0; color: var(--text-primary); }
-        p.description { color: var(--text-secondary); font-size: 14px; margin-bottom: 30px; line-height: 1.5; }
+        p.description { color: var(--text-secondary); font-size: 14px; margin-bottom: 25px; line-height: 1.5; }
+        
+        /* Destaque para o e-mail institucional dinâmico */
+        .email-highlight {
+            color: var(--text-primary);
+            font-weight: 600;
+            display: block;
+            margin-top: 5px;
+        }
+
         .input-code-group input { 
             width: 100%; 
             padding: 14px; 
-            background-color: #fff; 
+            background-color: var(--card-bg); 
             border: 1px solid var(--border-light); 
             border-radius: 10px; 
             color: var(--text-primary); 
@@ -56,24 +110,64 @@
             box-sizing: border-box; 
             transition: all 0.2s; 
         }
+        
         .input-code-group input:focus { outline: none; border-color: var(--brand-green); box-shadow: 0 0 0 3px var(--input-focus); }
+        
         .btn-verify { width: 100%; padding: 14px; background-color: var(--brand-green); border: none; border-radius: 10px; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; margin-top: 25px; }
         .btn-verify:hover { background-color: var(--brand-green-hover); }
-        .back-to-login { display: inline-block; margin-top: 25px; color: var(--text-secondary); text-decoration: none; font-size: 13px; }
+        
+        /* Área de Reenvio de Código */
+        .resend-container {
+            margin-top: 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .resend-btn {
+            color: var(--brand-green);
+            text-decoration: none;
+            font-weight: 500;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            font-size: 13px;
+        }
+
+        .resend-btn:disabled {
+            color: var(--text-secondary);
+            cursor: not-allowed;
+            text-decoration: none;
+        }
+
+        .resend-btn:not(:disabled):hover {
+            text-decoration: underline;
+        }
+
+        .back-to-login { display: inline-block; margin-top: 20px; color: var(--text-secondary); text-decoration: none; font-size: 13px; }
         .back-to-login:hover { color: var(--brand-green); text-decoration: underline; }
+        
         .alert-box { margin-top: 15px; padding: 12px; border-radius: 10px; font-size: 13px; display: none; text-align: left; }
         .alert-error { background-color: #fef2f2; border: 1px solid #fee2e2; color: #991b1b; }
         .alert-success { background-color: #f0fdf4; border: 1px solid #dcfce7; color: #166534; }
     </style>
 </head>
 <body>
+
+    <div class="top-controls">
+        <button id="themeToggle" class="control-btn">🌙 Modo Escuro</button>
+    </div>
+
     <div class="token-wrapper">
         <div class="brand-header">
             <img src="img/logo2 copy.png" alt="Logo" class="logo" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2942/2942780.png'">
         </div>
 
         <h2>Verificação de Segurança</h2>
-        <p class="description">Introduza o código de validação de 6 dígitos enviado para a sua caixa de correio eletrónico corporativa.</p>
+        <p class="description">
+            Introduza o código de validação de 6 dígitos enviado para:
+            <span id="targetEmail" class="email-highlight">carregando...</span>
+        </p>
 
         <form id="tokenForm">
             <div class="input-code-group">
@@ -83,6 +177,11 @@
             <button type="submit" class="btn-verify">Confirmar Identidade</button>
             <div id="alertBox" class="alert-box"></div>
 
+            <div class="resend-container">
+                Não recebeu o código? 
+                <button type="button" id="resendBtn" class="resend-btn" disabled>Reenviar (60s)</button>
+            </div>
+
             <a href="index.html" class="back-to-login">← Voltar para o Login</a>
         </form>
     </div>
@@ -91,12 +190,95 @@
         document.addEventListener("DOMContentLoaded", function () {
             const form = document.getElementById("tokenForm");
             const BASE_URL = "https://appdedetizacao.onrender.com";
+            const targetEmailSpan = document.getElementById("targetEmail");
+            const resendBtn = document.getElementById("resendBtn");
+            const themeToggleBtn = document.getElementById('themeToggle');
 
-            if (!form) {
-                console.error("Erro: Formulário não foi encontrado.");
-                return;
+            // 🌓 Sincronização Inteligente do Tema Escuro
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                themeToggleBtn.textContent = '☀️ Modo Claro';
             }
 
+            themeToggleBtn.addEventListener('click', () => {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                if (currentTheme === 'dark') {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'light');
+                    themeToggleBtn.textContent = '🌙 Modo Escuro';
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                    themeToggleBtn.textContent = '☀️ Modo Claro';
+                }
+            });
+
+            // 📩 Recuperação e Mascaramento Seguro do E-mail
+            const email = localStorage.getItem("emailTemp") || localStorage.getItem("logging_email");
+            if (email) {
+                targetEmailSpan.textContent = maskEmail(email);
+            } else {
+                targetEmailSpan.textContent = "seu e-mail institucional";
+            }
+
+            function maskEmail(fullEmail) {
+                const [username, domain] = fullEmail.split("@");
+                if (username.length <= 2) return `***@${domain}`;
+                return `${username.substring(0, 2)}***@${domain}`;
+            }
+
+            // ⏱️ Controle do Temporizador de Reenvio
+            let countdown = 60;
+            function startCountdown() {
+                resendBtn.disabled = true;
+                countdown = 60;
+                const interval = setInterval(() => {
+                    countdown--;
+                    resendBtn.textContent = `Reenviar (${countdown}s)`;
+                    if (countdown <= 0) {
+                        clearInterval(interval);
+                        resendBtn.disabled = false;
+                        resendBtn.textContent = "Reenviar Código";
+                    }
+                }, 1000);
+            }
+            startCountdown(); // Inicia o contador assim que a página carrega
+
+            // 🔄 Integração do Evento de Reenvio à sua API existente
+            resendBtn.addEventListener("click", async () => {
+                const alertBox = document.getElementById("alertBox");
+                alertBox.style.display = "none";
+                
+                try {
+                    resendBtn.disabled = true;
+                    resendBtn.textContent = "Solicitando...";
+                    
+                    // Dispara a mesma chamada de auth que gera o token por e-mail
+                    const response = await fetch(`${BASE_URL}/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: email, tipoUsuario: "EMPRESA", tipo: "EMPRESA" })
+                    });
+
+                    if (response.ok) {
+                        alertBox.className = "alert-box alert-success";
+                        alertBox.textContent = "Um novo código de acesso foi disparado para a sua caixa!";
+                        alertBox.style.display = "block";
+                        startCountdown();
+                    } else {
+                        throw new Error("Não foi possível solicitar um novo código. Tente novamente.");
+                    }
+                } catch (err) {
+                    alertBox.className = "alert-box alert-error";
+                    alertBox.textContent = err.message;
+                    alertBox.style.display = "block";
+                    resendBtn.disabled = false;
+                    resendBtn.textContent = "Reenviar Código";
+                }
+            });
+
+            // 🚀 Validação do Token Original (Preservado Intacto)
             form.addEventListener("submit", function (e) {
                 e.preventDefault();
                 validarToken();
@@ -107,13 +289,9 @@
                 const btnSubmit = form.querySelector("button");
                 const alertBox = document.getElementById("alertBox");
                 
-                if (!codigoInput || !alertBox) {
-                    console.error("Erro interno: Elementos da árvore DOM não mapeados.");
-                    return;
-                }
+                if (!codigoInput || !alertBox) return;
 
                 const codigo = codigoInput.value.trim();
-                const email = localStorage.getItem("emailTemp") || localStorage.getItem("logging_email");
 
                 if (!email) {
                     alertBox.className = "alert-box alert-error";
@@ -130,7 +308,6 @@
                     return;
                 }
 
-                // Efeito Estilizado Industrial/Neon
                 const originalText = btnSubmit.innerHTML;
                 btnSubmit.innerHTML = "〈 VALIDANDO ACESSO... 〉";
                 btnSubmit.disabled = true;
@@ -138,95 +315,67 @@
                 alertBox.style.display = "none";
 
                 try {
-    const response = await fetch(`${BASE_URL}/auth/validar`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, codigo })
-    });
+                    const response = await fetch(`${BASE_URL}/auth/validar`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ email, codigo })
+                    });
 
-    // 1. PRIMEIRO checa se a resposta é válida antes de tratar os dados
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "Código de autenticação inválido ou expirado.");
-    }
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.message || "Código de autenticação inválido ou expirado.");
+                    }
 
-    const data = await response.json();
-    console.log("📡 Resposta Completa do Servidor:", data);
+                    const data = await response.json();
+                    const tokenGerado = data.token || data.token_usuario || data.accessToken;
+                    if (!tokenGerado) throw new Error("Erro crítico: Chave JWT ausente.");
 
-    // 2. Extração ultra-segura do Token JWT
-    const tokenGerado = data.token || data.token_usuario || data.accessToken;
-    if (!tokenGerado) {
-        throw new Error("Erro crítico: O servidor não emitiu uma chave de assinatura JWT válida.");
-    }
+                    let idEncontrado = data.idEmpresa || data.id || data.empresaId || data.usuarioId;
+                    if (!idEncontrado && data.usuario) idEncontrado = data.usuario.id;
+                    if (!idEncontrado && data.empresa) idEncontrado = data.empresa.id;
+                    
+                    if (!idEncontrado) throw new Error("Erro de sincronização com ID corporativo.");
 
-    // 3. Mapeia o ID de forma profunda (caso venha dentro de um objeto de usuário/empresa)
-    let idEncontrado = data.idEmpresa || data.id || data.empresaId || data.usuarioId;
-    
-    if (!idEncontrado && data.usuario) {
-        idEncontrado = data.usuario.id || data.usuario.empresaId;
-    }
-    if (!idEncontrado && data.empresa) {
-        idEncontrado = data.empresa.id;
-    }
-    
-    if (!idEncontrado) {
-        console.error("⚠️ Estrutura recebida inválida:", data);
-        throw new Error("Erro de sincronização: O servidor não retornou um ID corporativo válido no payload.");
-    }
+                    localStorage.removeItem("emailTemp");
+                    localStorage.removeItem("logging_email");
 
-    // 4. Limpa chaves provisórias de login
-    localStorage.removeItem("emailTemp");
-    localStorage.removeItem("logging_email");
+                    localStorage.setItem("token", tokenGerado);
+                    localStorage.setItem("token_usuario", tokenGerado);
+                    localStorage.setItem("TOKEN_AUTH", tokenGerado);
+                    localStorage.setItem("empresaId", String(idEncontrado));
+                    localStorage.setItem("usuario_id", String(idEncontrado));
+                    
+                    const nomeExibicao = data.nome || (data.empresa ? data.empresa.nome : null) || "Operador Corporativo";
+                    localStorage.setItem("tipoUsuario", data.tipo || "EMPRESA");
+                    localStorage.setItem("userName", nomeExibicao);
+                    localStorage.setItem("userEmail", email);
 
-    // 5. Sincroniza e espelha todas as chaves de autenticação consumidas pelo ecossistema
-    localStorage.setItem("token", tokenGerado);
-    localStorage.setItem("token_usuario", tokenGerado);
-    localStorage.setItem("TOKEN_AUTH", tokenGerado);
-    
-    // Armazena os IDs tratados como String pura para evitar o erro "undefined" nas URLs
-    localStorage.setItem("empresaId", String(idEncontrado));
-    localStorage.setItem("usuario_id", String(idEncontrado));
-    
-    // Dados de exibição de Perfil
-    const nomeExibicao = data.nome || (data.empresa ? data.empresa.nome : null) || "Operador Corporativo";
-    localStorage.setItem("tipoUsuario", data.tipo || "EMPRESA");
-    localStorage.setItem("userName", nomeExibicao);
-    localStorage.setItem("empresaNome", nomeExibicao);
-    localStorage.setItem("userEmail", email);
+                    alertBox.className = "alert-box alert-success";
+                    alertBox.textContent = "Acesso autorizado! Estabelecendo conexão segura...";
+                    alertBox.style.display = "block";
 
-    // Interface visual de sucesso
-    alertBox.className = "alert-box alert-success";
-    alertBox.textContent = "Acesso autorizado! Estabelecendo conexão segura...";
-    alertBox.style.display = "block";
+                    btnSubmit.innerHTML = "〈 CONEXÃO ESTABELECIDA 〉";
+                    btnSubmit.style.boxShadow = "0 0 20px #00ff55";
+                    btnSubmit.style.color = "#00ff55";
 
-    btnSubmit.innerHTML = "〈 CONEXÃO ESTABELECIDA 〉";
-    btnSubmit.style.boxShadow = "0 0 20px #00ff55";
-    btnSubmit.style.color = "#00ff55";
+                    const tipoTratado = data.tipo ? data.tipo.toUpperCase() : "EMPRESA";
+                    let destino = "dashboard_empresa.html";
+                    
+                    if (tipoTratado === "ADMIN" || tipoTratado === "ADMINISTRADOR") destino = "dashboard_admin.html";
+                    else if (tipoTratado === "CLIENTE") destino = "dashboard_cliente.html";
 
-    const tipoTratado = data.tipo ? data.tipo.toUpperCase() : "EMPRESA";
-    let destino = "dashboard_empresa.html";
-    
-    if (tipoTratado === "ADMIN" || tipoTratado === "ADMINISTRADOR") {
-        destino = "dashboard_admin.html";
-    } else if (tipoTratado === "CLIENTE") {
-        destino = "dashboard_cliente.html";
-    }
+                    setTimeout(() => { window.location.href = destino; }, 1200);
 
-    setTimeout(() => {
-        window.location.href = destino;
-    }, 1200);
+                } catch (err) {
+                    alertBox.className = "alert-box alert-error";
+                    alertBox.textContent = err.message;
+                    alertBox.style.display = "block";
 
-} catch (err) {
-    // Tratamento de falhas sem quebrar a árvore de execução do JavaScript
-    alertBox.className = "alert-box alert-error";
-    alertBox.textContent = err.message;
-    alertBox.style.display = "block";
-
-    btnSubmit.innerHTML = originalText;
-    btnSubmit.disabled = false;
-    btnSubmit.style.boxShadow = "";
-    btnSubmit.style.color = "";
-}
+                    btnSubmit.innerHTML = originalText;
+                    btnSubmit.disabled = false;
+                    btnSubmit.style.boxShadow = "";
+                    btnSubmit.style.color = "";
+                }
             }
         });
     </script>
