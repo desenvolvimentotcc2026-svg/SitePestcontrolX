@@ -15,6 +15,19 @@
             --border-light: #e2e8f0;
             --input-focus: #bbf7d0;
         }
+
+        /* 🌙 Tokens de Cor para o Modo Escuro */
+        [data-theme="dark"] {
+            --bg-global: #0f172a;
+            --card-bg: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --brand-green: #22c55e;
+            --brand-green-hover: #16a34a;
+            --border-light: #334155;
+            --input-focus: #14532d;
+        }
+
         body {
             background-color: var(--bg-global);
             color: var(--text-primary);
@@ -24,7 +37,42 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            position: relative;
         }
+
+        /* ⚙️ Barra de Recursos Superior */
+        .top-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .control-btn {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-light);
+            color: var(--text-secondary);
+            padding: 8px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+        }
+
+        .control-btn:hover {
+            color: var(--text-primary);
+            border-color: var(--brand-green);
+            transform: translateY(-1px);
+        }
+
         .login-wrapper {
             background-color: var(--card-bg);
             border: 1px solid var(--border-light);
@@ -34,30 +82,37 @@
             max-width: 450px;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
             box-sizing: border-box;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
+
         .brand-header {
             text-align: center;
             margin-bottom: 35px;
         }
+
         .brand-header img.logo {
             max-height: 85px;
             margin-bottom: 16px;
         }
+
         .brand-header h1 {
             font-size: 22px;
             font-weight: 600;
             color: var(--text-primary);
             margin: 0;
         }
+
         .brand-header p {
             color: var(--text-secondary);
             font-size: 14px;
             margin-top: 8px;
         }
+
         .form-group {
             margin-bottom: 22px;
             text-align: left;
         }
+
         .form-group label {
             display: block;
             font-size: 13px;
@@ -65,36 +120,42 @@
             color: var(--text-primary);
             margin-bottom: 8px;
         }
+
         .form-group input {
             width: 100%;
             padding: 13px 16px;
             border: 1px solid var(--border-light);
             border-radius: 10px;
-            background-color: #fff;
+            background-color: var(--card-bg); /* Ajustado para acompanhar o tema */
             color: var(--text-primary);
             font-size: 14px;
             box-sizing: border-box;
             transition: all 0.2s ease;
         }
+
         .form-group input:focus {
             outline: none;
             border-color: var(--brand-green);
             box-shadow: 0 0 0 3px var(--input-focus);
         }
+
         .action-row {
             display: flex;
             justify-content: flex-end;
             margin-bottom: 25px;
         }
+
         .action-row a {
             color: var(--brand-green);
             text-decoration: none;
             font-size: 13px;
             font-weight: 500;
         }
+
         .action-row a:hover {
             text-decoration: underline;
         }
+
         .btn-primary {
             width: 100%;
             padding: 14px;
@@ -107,23 +168,28 @@
             cursor: pointer;
             transition: background-color 0.2s ease;
         }
+
         .btn-primary:hover {
             background-color: var(--brand-green-hover);
         }
+
         .footer-links {
             margin-top: 30px;
             text-align: center;
             font-size: 13px;
             color: var(--text-secondary);
         }
+
         .footer-links a {
             color: var(--brand-green);
             text-decoration: none;
             font-weight: 500;
         }
+
         .footer-links a:hover {
             text-decoration: underline;
         }
+
         .alert-box {
             margin-top: 15px;
             padding: 12px;
@@ -131,11 +197,90 @@
             font-size: 13px;
             display: none;
         }
+
         .alert-error { background-color: #fef2f2; border: 1px solid #fee2e2; color: #991b1b; }
         .alert-success { background-color: #f0fdf4; border: 1px solid #dcfce7; color: #166534; }
+
+        /* 📋 Estilos do Modal de Diretrizes */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 23, 42, 0.3);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+            padding: 35px;
+            border-radius: 16px;
+            border: 1px solid var(--border-light);
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            position: relative;
+            animation: modalFadeIn 0.2s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 22px;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .close-modal:hover {
+            color: var(--text-primary);
+        }
+
+        .modal h2 {
+            margin-top: 0;
+            font-size: 20px;
+            color: var(--brand-green);
+        }
+
+        .modal hr {
+            border: 0;
+            border-top: 1px solid var(--border-light);
+            margin: 15px 0;
+        }
+
+        .modal ul {
+            padding-left: 20px;
+            line-height: 1.6;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .modal ul li {
+            margin-bottom: 12px;
+        }
+
+        .modal ul strong {
+            color: var(--text-primary);
+        }
     </style>
 </head>
 <body>
+
+    <div class="top-controls">
+        <button id="guidelinesToggle" class="control-btn">📋 Diretrizes</button>
+        <button id="themeToggle" class="control-btn">🌙 Modo Escuro</button>
+    </div>
 
     <div class="login-wrapper">
         <div class="brand-header">
@@ -168,7 +313,55 @@
         </form>
     </div>
 
-  <script>
+    <div id="guidelinesModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Diretrizes Operacionais - PestControlX</h2>
+            <hr>
+            <ul>
+                <li><strong>Segurança de Credenciais:</strong> Este terminal monitora acessos. Nunca forneça sua palavra-passe a terceiros.</li>
+                <li><strong>Duplo Fator (MFA):</strong> Após este painel, um código de verificação temporário será enviado estritamente ao seu e-mail institucional.</li>
+                <li><strong>Tempo de Sessão:</strong> Inatividades por mais de 15 minutos desconectarão o terminal automaticamente por conformidade de segurança biológica.</li>
+                <li><strong>Auditoria:</strong> Todas as ordens de serviço e relatórios de dedetização gerados estão vinculados ao seu registro de operador.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 🌓 Lógica de Alternância de Tema (Light/Dark Mode)
+        const themeToggleBtn = document.getElementById('themeToggle');
+        const savedTheme = localStorage.getItem('theme') || 'light';
+
+        if (savedTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            themeToggleBtn.textContent = '☀️ Modo Claro';
+        }
+
+        themeToggleBtn.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            if (currentTheme === 'dark') {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+                themeToggleBtn.textContent = '🌙 Modo Escuro';
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                themeToggleBtn.textContent = '☀️ Modo Claro';
+            }
+        });
+
+        // 📋 Lógica de Controle do Modal de Diretrizes
+        const modal = document.getElementById('guidelinesModal');
+        const openModalBtn = document.getElementById('guidelinesToggle');
+        const closeModalBtn = document.querySelector('.close-modal');
+
+        openModalBtn.addEventListener('click', () => modal.style.display = 'flex');
+        closeModalBtn.addEventListener('click', () => modal.style.display = 'none');
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) modal.style.display = 'none';
+        });
+
+        // 🚀 Lógica Original da Requisição da API (Preservada)
         const API_BASE_URL = 'https://appdedetizacao.onrender.com';
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
@@ -184,12 +377,11 @@
             alertBox.style.display = 'none';
 
             try {
-                // 🚀 CORREÇÃO: Enviamos o payload completo alinhado com o seu Spring Boot
                 const payload = { 
                     email: email, 
                     senha: senha, 
-                    tipoUsuario: "EMPRESA", // Garante o mapeamento do DTO corporativo
-                    tipo: "EMPRESA"         // redundância de segurança caso o campo varie
+                    tipoUsuario: "EMPRESA", 
+                    tipo: "EMPRESA" 
                 };
 
                 const response = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -205,7 +397,6 @@
                     alertBox.textContent = 'Autenticação efetuada! Verifique o código enviado ao seu e-mail...';
                     alertBox.style.display = 'block';
                     
-                    // Salva o e-mail para ser usado na tela do token
                     localStorage.setItem('logging_email', email);
                     localStorage.setItem('emailTemp', email);
 
@@ -213,14 +404,11 @@
                         window.location.href = 'token.html'; 
                     }, 1500);
                 } else {
-                    // Se falhar, tenta ler a mensagem do servidor de forma segura
                     let msgErro = 'Credenciais inválidas ou erro no servidor.';
                     try {
                         const data = await response.json();
                         if (data && data.message) msgErro = data.message;
-                    } catch (e) {
-                        // Se o corpo vier vazio ou texto simples, evita crash do JS
-                    }
+                    } catch (e) {}
 
                     alertBox.className = 'alert-box alert-error';
                     alertBox.textContent = msgErro;
@@ -230,7 +418,6 @@
                     btnSubmit.disabled = false;
                 }
             } catch (err) {
-                // Captura erros de rede ou de CORS no console
                 console.error("🔴 Erro crítico na requisição de login:", err);
                 
                 alertBox.className = 'alert-box alert-error';
