@@ -6,6 +6,118 @@
     <title>PestControlX - Central de Gerenciamento</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css"> 
+    
+    <style>
+        #pestbot-widget {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 340px;
+            background-color: var(--bg-card, #ffffff);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+            z-index: 9999;
+            border: 1px solid var(--border-color, #e2e8f0);
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        #pestbot-widget.hidden {
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+        }
+
+        .pestbot-header {
+            background-color: var(--primary, #16a34a);
+            color: #ffffff;
+            padding: 14px 18px;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .pestbot-header button {
+            background: rgba(0,0,0,0.2);
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: background 0.2s;
+        }
+
+        .pestbot-header button:hover {
+            background: rgba(0,0,0,0.4);
+        }
+
+        .pestbot-body {
+            padding: 20px;
+            font-size: 14px;
+            color: var(--text-main, #1e293b);
+            line-height: 1.5;
+            background-color: var(--bg-card, #ffffff);
+        }
+
+        .pestbot-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .pestbot-btn {
+            background-color: var(--primary, #16a34a);
+            color: #ffffff;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            flex: 1;
+            transition: background 0.2s;
+        }
+
+        .pestbot-btn:hover {
+            background-color: var(--primary-hover, #15803d);
+        }
+
+        /* Highlight para o Tutorial Guiado */
+        .pestbot-highlight {
+            position: relative;
+            z-index: 10000;
+            outline: 3px solid var(--primary, #16a34a);
+            outline-offset: 2px;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.6);
+            transition: all 0.3s ease;
+        }
+
+        /* Botão na Topbar para reativar o Bot */
+        .btn-ativar-bot {
+            background-color: rgba(22, 163, 74, 0.1);
+            color: var(--primary, #16a34a);
+            border: 1px solid var(--primary, #16a34a);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: none; /* Escondido por padrão, aparece se o bot for desligado */
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-ativar-bot:hover {
+            background-color: var(--primary, #16a34a);
+            color: #fff;
+        }
+    </style>
 </head>
 <body>
     <script>
@@ -25,6 +137,10 @@
             </h1>
         </div>
         <div class="topbar-right">
+            <button id="btn-ligar-bot" class="btn-ativar-bot" onclick="pestBot.toggleBot(true)">
+                <i class="fa-solid fa-robot"></i> Ligar Assistente
+            </button>
+
             <div class="connection-badge">
                 <span class="pulse-dot"></span> Terminal Seguro
             </div>
@@ -37,7 +153,7 @@
     <div class="app-body">
         <nav class="sidebar" id="sidebar">
             <div class="profile-area">
-                <div class="profile-pic-container">
+                <div class="profile-pic-container" id="passo-1-perfil">
                     <img id="imgPfpSidebar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364748b'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>">
                     <label class="change-pic-btn" for="filePfpInput" title="Atualizar Foto de Perfil">
                         <i class="fa-solid fa-camera"></i>
@@ -52,7 +168,7 @@
             </div>
             
             <div class="nav-buttons">
-                <button class="nav-btn active" onclick="navegar(this, 'solicitacoes.html')">
+                <button id="passo-2-monitoramento" class="nav-btn active" onclick="navegar(this, 'solicitacoes.html')">
                     <i class="fa-solid fa-chart-line"></i> <span>Monitoramento</span>
                 </button>
                 <button class="nav-btn" onclick="navegar(this, 'clientes.html')">
@@ -61,7 +177,7 @@
                 <button class="nav-btn" onclick="navegar(this, 'chat.html')">
                     <i class="fa-regular fa-comments"></i> <span>Chat ao Vivo</span>
                 </button>
-                <button class="nav-btn" onclick="navegar(this, 'sobre.html')">
+                <button id="alvo-sobre-empresa" class="nav-btn" onclick="navegar(this, 'sobre.html')">
                     <i class="fa-solid fa-building-shield"></i> <span>Sobre a Empresa</span>
                 </button>
                 <button class="nav-btn" onclick="navegar(this, 'configuracoestela.html')">
@@ -79,6 +195,195 @@
         </main>
     </div>
 
+    <script>
+        // Simulador da verificação do banco de dados para checar se o perfil está completo.
+        // Na prática, você alimentaria isso com um fetch para a sua API.
+        const verificarSePerfilEstaCompleto = () => {
+            // Lógica fictícia: Se não houver uma descrição salva, consideramos incompleto.
+            const empresaId = localStorage.getItem("empresaId") || "1";
+            // Tentamos ver se a mensagem de boas vindas ou a descrição existe no cache (ou você faria um fetch).
+            const temDescricao = localStorage.getItem(`welcomeMsg_${empresaId}`);
+            return !!temDescricao; // Retorna true se estiver preenchido, false se não.
+        };
+
+        class PestBotManager {
+            constructor() {
+                // Checa se o usuário desativou a IA anteriormente
+                this.isActive = localStorage.getItem('pestbot_status') !== 'disabled';
+                this.init();
+            }
+
+            init() {
+                const btnLigar = document.getElementById('btn-ligar-bot');
+                
+                if (!this.isActive) {
+                    console.log("PestBot desativado. Modo silencioso.");
+                    this.hideBotUI();
+                    if(btnLigar) btnLigar.style.display = 'flex';
+                    return;
+                }
+                
+                if(btnLigar) btnLigar.style.display = 'none';
+                this.renderBotUI();
+                
+                // Aguarda um pequeno delay para a interface principal carregar antes de avaliar
+                setTimeout(() => {
+                    this.avaliarEstadoDoUsuario();
+                }, 1000);
+            }
+
+            renderBotUI() {
+                this.hideBotUI();
+
+                const botContainer = document.createElement('div');
+                botContainer.id = 'pestbot-widget';
+                botContainer.innerHTML = `
+                    <div class="pestbot-header">
+                        <span><i class="fa-solid fa-robot"></i> PestBot Assistente</span>
+                        <button onclick="pestBot.toggleBot(false)">OCULTAR X</button>
+                    </div>
+                    <div class="pestbot-body" id="pestbot-text-container">
+                        Inicializando matriz comportamental...
+                    </div>
+                `;
+                document.body.appendChild(botContainer);
+            }
+
+            avaliarEstadoDoUsuario() {
+                const tutorialFeito = localStorage.getItem('pestbot_tutorial_completo');
+                const perfilCompleto = verificarSePerfilEstaCompleto();
+
+                if (!tutorialFeito) {
+                    this.iniciarTourGuiado();
+                } else if (!perfilCompleto) {
+                    this.solicitarPreenchimentoPerfil();
+                } else {
+                    this.entrarEmModoEspera();
+                }
+            }
+
+            // --- FLUXO 1: TOUR GUIADO ---
+            iniciarTourGuiado() {
+                const txt = document.getElementById('pestbot-text-container');
+                const alvo = document.getElementById('passo-1-perfil');
+                
+                if(alvo) alvo.classList.add('pestbot-highlight');
+
+                txt.innerHTML = `
+                    <p><strong>Olá! Sou o PestBot.</strong><br>Bem-vindo ao seu painel corporativo. Aqui à esquerda fica o seu perfil operacional.</p>
+                    <div class="pestbot-actions">
+                        <button class="pestbot-btn" onclick="pestBot.tourPasso2()">Continuar <i class="fa-solid fa-arrow-right"></i></button>
+                    </div>
+                `;
+            }
+
+            tourPasso2() {
+                document.getElementById('passo-1-perfil')?.classList.remove('pestbot-highlight');
+                
+                const txt = document.getElementById('pestbot-text-container');
+                const alvo = document.getElementById('passo-2-monitoramento');
+                
+                if(alvo) alvo.classList.add('pestbot-highlight');
+
+                txt.innerHTML = `
+                    <p><strong>O Coração da Operação:</strong><br>Aqui no <em>Monitoramento</em> você gerencia as solicitações e rastreia seus técnicos por satélite.</p>
+                    <div class="pestbot-actions">
+                        <button class="pestbot-btn" onclick="pestBot.finalizarTour()">Entendi!</button>
+                    </div>
+                `;
+            }
+
+            finalizarTour() {
+                document.getElementById('passo-2-monitoramento')?.classList.remove('pestbot-highlight');
+                localStorage.setItem('pestbot_tutorial_completo', 'true');
+                
+                // Transição fluida para checar o perfil
+                const txt = document.getElementById('pestbot-text-container');
+                txt.innerHTML = `<p>Excelente! Analisando os dados da sua unidade...</p>`;
+                
+                setTimeout(() => {
+                    this.avaliarEstadoDoUsuario();
+                }, 1500);
+            }
+
+            // --- FLUXO 2: REDIRECIONAMENTO DE DADOS ---
+            solicitarPreenchimentoPerfil() {
+                const txt = document.getElementById('pestbot-text-container');
+                txt.innerHTML = `
+                    <p><strong style="color: #eab308;"><i class="fa-solid fa-triangle-exclamation"></i> Atenção Necessária:</strong><br>
+                    Notei que o perfil institucional da sua dedetizadora está incompleto. Sem ele, os clientes não poderão te encontrar no App.</p>
+                    <div class="pestbot-actions">
+                        <button class="pestbot-btn" onclick="pestBot.direcionarParaSobre()">Completar Agora</button>
+                    </div>
+                `;
+            }
+
+            direcionarParaSobre() {
+                // Remove destaques se houver
+                document.getElementById('passo-1-perfil')?.classList.remove('pestbot-highlight');
+                document.getElementById('passo-2-monitoramento')?.classList.remove('pestbot-highlight');
+                
+                // Simula o clique no botão do menu "Sobre a Empresa"
+                const btnSobre = document.getElementById('alvo-sobre-empresa');
+                if (btnSobre) {
+                    btnSobre.click(); // Usa a sua própria função navegar() existente!
+                    
+                    const txt = document.getElementById('pestbot-text-container');
+                    txt.innerHTML = `
+                        <p><strong>Perfeito!</strong><br>Preencha os campos à direita para gerar a sua vitrine no aplicativo. Assim que salvar, o aviso sumirá.</p>
+                        <div class="pestbot-actions">
+                            <button class="pestbot-btn" onclick="pestBot.entrarEmModoEspera()">Ocultar Aviso</button>
+                        </div>
+                    `;
+                }
+            }
+
+            // --- FLUXO 3: STANDBY ---
+            entrarEmModoEspera() {
+                const txt = document.getElementById('pestbot-text-container');
+                txt.innerHTML = `
+                    <p>Sistemas operacionais normalizados. Estou monitorando o fluxo de dados em segundo plano. 🛡️</p>
+                `;
+                
+                // Oculta o bot após 5 segundos em stand by para limpar a tela
+                setTimeout(() => {
+                    const widget = document.getElementById('pestbot-widget');
+                    if (widget) widget.classList.add('hidden');
+                }, 5000);
+            }
+
+            // --- CONTROLE MESTRE ---
+            toggleBot(ativar) {
+                if (ativar) {
+                    localStorage.setItem('pestbot_status', 'active');
+                    this.isActive = true;
+                    this.init();
+                } else {
+                    localStorage.setItem('pestbot_status', 'disabled');
+                    this.isActive = false;
+                    this.hideBotUI();
+                    
+                    // Limpeza de rastros do tutorial
+                    document.getElementById('passo-1-perfil')?.classList.remove('pestbot-highlight');
+                    document.getElementById('passo-2-monitoramento')?.classList.remove('pestbot-highlight');
+                    
+                    const btnLigar = document.getElementById('btn-ligar-bot');
+                    if(btnLigar) btnLigar.style.display = 'flex';
+                }
+            }
+
+            hideBotUI() {
+                const widget = document.getElementById('pestbot-widget');
+                if (widget) widget.remove();
+            }
+        }
+
+        // Inicializa o assistente apenas após a árvore DOM do Dashboard ser carregada
+        document.addEventListener("DOMContentLoaded", () => {
+            window.pestBot = new PestBotManager();
+        });
+
+    </script>
     <script src="js/dashboard_empresa.js"></script>
 </body>
 </html>
