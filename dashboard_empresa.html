@@ -7,109 +7,185 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css"> 
     
+    <!-- 🤖 SUITE DE ESTILOS AVANÇADOS PESTBOT CORE -->
     <style>
         #pestbot-widget {
             position: fixed;
             bottom: 30px;
             right: 30px;
-            width: 340px;
+            width: 360px;
             background-color: var(--bg-card, #ffffff);
-            border-radius: 12px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            box-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.25);
             z-index: 9999;
             border: 1px solid var(--border-color, #e2e8f0);
             overflow: hidden;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            opacity: 1;
-            transform: translateY(0);
+            display: flex;
+            flex-direction: column;
+            font-family: system-ui, -apple-system, sans-serif;
         }
         
         #pestbot-widget.hidden {
             opacity: 0;
-            transform: translateY(20px);
+            transform: translateY(30px) scale(0.95);
             pointer-events: none;
         }
 
         .pestbot-header {
-            background-color: var(--primary, #16a34a);
+            background: linear-gradient(135deg, var(--primary, #16a34a), #15803d);
             color: #ffffff;
-            padding: 14px 18px;
+            padding: 16px 20px;
             font-weight: 700;
             display: flex;
             justify-content: space-between;
             align-items: center;
             font-size: 14px;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .pestbot-header .pestbot-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .pestbot-header button {
-            background: rgba(0,0,0,0.2);
+            background: rgba(255, 255, 255, 0.15);
             color: white;
             border: none;
-            padding: 4px 8px;
-            border-radius: 4px;
+            padding: 6px 10px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 11px;
-            transition: background 0.2s;
+            font-weight: 600;
+            transition: all 0.2s;
         }
 
         .pestbot-header button:hover {
-            background: rgba(0,0,0,0.4);
+            background: rgba(255, 255, 255, 0.3);
         }
 
         .pestbot-body {
             padding: 20px;
             font-size: 14px;
-            color: var(--text-main, #1e293b);
-            line-height: 1.5;
+            color: var(--text-main, #334155);
+            line-height: 1.6;
             background-color: var(--bg-card, #ffffff);
+            max-height: 280px;
+            overflow-y: auto;
         }
 
-        .pestbot-actions {
-            margin-top: 15px;
+        /* Menu de Opções Numéricas Inteligentes */
+        .pestbot-menu-list {
+            margin-top: 12px;
             display: flex;
-            gap: 10px;
+            flex-direction: column;
+            gap: 8px;
+            padding: 0;
+            list-style: none;
         }
 
-        .pestbot-btn {
-            background-color: var(--primary, #16a34a);
-            color: #ffffff;
-            border: none;
+        .pestbot-menu-item {
+            background: var(--bg-body, #f8fafc);
+            border: 1px solid var(--border-color, #e2e8f0);
             padding: 10px 14px;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 12px;
-            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .pestbot-menu-item:hover {
+            background-color: rgba(22, 163, 74, 0.08);
+            border-color: var(--primary, #16a34a);
+            transform: translateX(3px);
+        }
+
+        .pestbot-badge {
+            background: var(--primary, #16a34a);
+            color: white;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        /* Barra de Entrada de Comandos de Texto/Números */
+        .pestbot-input-area {
+            padding: 12px 20px 20px 20px;
+            background: var(--bg-card, #ffffff);
+            border-top: 1px solid var(--border-color, #e2e8f0);
+            display: flex;
+            gap: 8px;
+        }
+
+        .pestbot-input-wrapper {
+            position: relative;
             flex: 1;
+        }
+
+        .pestbot-input {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color, #cbd5e1);
+            background: var(--bg-body, #f8fafc);
+            color: var(--text-main, #0f172a);
+            font-size: 13px;
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+
+        .pestbot-input:focus {
+            outline: none;
+            border-color: var(--primary, #16a34a);
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+        }
+
+        .pestbot-send-btn {
+            background: var(--primary, #16a34a);
+            color: white;
+            border: none;
+            padding: 0 14px;
+            border-radius: 8px;
+            cursor: pointer;
             transition: background 0.2s;
         }
 
-        .pestbot-btn:hover {
-            background-color: var(--primary-hover, #15803d);
+        .pestbot-send-btn:hover {
+            background: var(--primary-hover, #15803d);
         }
 
-        /* Highlight para o Tutorial Guiado */
+        /* Efeito de Destaque Guiado Profissional */
         .pestbot-highlight {
             position: relative;
             z-index: 10000;
             outline: 3px solid var(--primary, #16a34a);
-            outline-offset: 2px;
-            box-shadow: 0 0 0 9999px rgba(0,0,0,0.6);
+            outline-offset: 4px;
+            box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.65) !important;
+            border-radius: 8px;
             transition: all 0.3s ease;
         }
 
-        /* Botão na Topbar para reativar o Bot */
+        /* Botão na Topbar Mestra */
         .btn-ativar-bot {
             background-color: rgba(22, 163, 74, 0.1);
             color: var(--primary, #16a34a);
             border: 1px solid var(--primary, #16a34a);
-            padding: 6px 12px;
-            border-radius: 6px;
+            padding: 8px 14px;
+            border-radius: 8px;
             font-size: 12px;
             font-weight: 600;
             cursor: pointer;
-            display: none; /* Escondido por padrão, aparece se o bot for desligado */
+            display: none;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             transition: all 0.2s;
         }
 
@@ -117,11 +193,18 @@
             background-color: var(--primary, #16a34a);
             color: #fff;
         }
+
+        .alert-pulse {
+            border-left: 4px solid #eab308;
+            background: rgba(234, 179, 8, 0.06);
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
     <script>
-        // Injeção de tema imediata para evitar flashes brancos na inicialização
         if (localStorage.getItem('theme') === 'dark') {
             document.body.classList.add('dark-theme');
         }
@@ -137,8 +220,9 @@
             </h1>
         </div>
         <div class="topbar-right">
+            <!-- Botão de Ativação Rápida Superior -->
             <button id="btn-ligar-bot" class="btn-ativar-bot" onclick="pestBot.toggleBot(true)">
-                <i class="fa-solid fa-robot"></i> Ligar Assistente
+                <i class="fa-solid fa-robot"></i> Chamar PestBot
             </button>
 
             <div class="connection-badge">
@@ -195,29 +279,31 @@
         </main>
     </div>
 
+    <!-- 🤖 ARQUITETURA COGNITIVA INTERATIVA DO PESTBOT -->
     <script>
-        // Simulador da verificação do banco de dados para checar se o perfil está completo.
-        // Na prática, você alimentaria isso com um fetch para a sua API.
         const verificarSePerfilEstaCompleto = () => {
-            // Lógica fictícia: Se não houver uma descrição salva, consideramos incompleto.
             const empresaId = localStorage.getItem("empresaId") || "1";
-            // Tentamos ver se a mensagem de boas vindas ou a descrição existe no cache (ou você faria um fetch).
             const temDescricao = localStorage.getItem(`welcomeMsg_${empresaId}`);
-            return !!temDescricao; // Retorna true se estiver preenchido, false se não.
+            return !!temDescricao; 
         };
 
         class PestBotManager {
             constructor() {
-                // Checa se o usuário desativou a IA anteriormente
                 this.isActive = localStorage.getItem('pestbot_status') !== 'disabled';
+                // Mapeamento dos módulos vinculados à ordem real dos seus botões na Sidebar
+                this.modulos = [
+                    { num: 1, nome: "Monitoramento", file: "solicitacoes.html" },
+                    { num: 2, nome: "Clientes", file: "clientes.html" },
+                    { num: 3, nome: "Chat ao Vivo", file: "chat.html" },
+                    { num: 4, nome: "Sobre a Empresa", file: "sobre.html" },
+                    { num: 5, nome: "Configurações do Terminal", file: "configuracoestela.html" }
+                ];
                 this.init();
             }
 
             init() {
                 const btnLigar = document.getElementById('btn-ligar-bot');
-                
                 if (!this.isActive) {
-                    console.log("PestBot desativado. Modo silencioso.");
                     this.hideBotUI();
                     if(btnLigar) btnLigar.style.display = 'flex';
                     return;
@@ -226,10 +312,9 @@
                 if(btnLigar) btnLigar.style.display = 'none';
                 this.renderBotUI();
                 
-                // Aguarda um pequeno delay para a interface principal carregar antes de avaliar
                 setTimeout(() => {
                     this.avaliarEstadoDoUsuario();
-                }, 1000);
+                }, 800);
             }
 
             renderBotUI() {
@@ -239,11 +324,24 @@
                 botContainer.id = 'pestbot-widget';
                 botContainer.innerHTML = `
                     <div class="pestbot-header">
-                        <span><i class="fa-solid fa-robot"></i> PestBot Assistente</span>
-                        <button onclick="pestBot.toggleBot(false)">OCULTAR X</button>
+                        <div class="pestbot-status">
+                            <i class="fa-solid fa-robot animate-pulse"></i> 
+                            <span>PestBot v2.5 Core</span>
+                        </div>
+                        <button onclick="pestBot.toggleBot(false)"><i class="fa-solid fa-eye-slash"></i> Ocultar</button>
                     </div>
                     <div class="pestbot-body" id="pestbot-text-container">
-                        Inicializando matriz comportamental...
+                        Sincronizando barramento de dados...
+                    </div>
+                    <div class="pestbot-input-area">
+                        <div class="pestbot-input-wrapper">
+                            <input type="text" id="pestbot-cmd-input" class="pestbot-input" 
+                                   placeholder="Digite o número do menu ou comando..." 
+                                   onkeydown="if(event.key === 'Enter') pestBot.processarEntradaTxt()">
+                        </div>
+                        <button class="pestbot-send-btn" onclick="pestBot.processarEntradaTxt()">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
                     </div>
                 `;
                 document.body.appendChild(botContainer);
@@ -256,103 +354,174 @@
                 if (!tutorialFeito) {
                     this.iniciarTourGuiado();
                 } else if (!perfilCompleto) {
-                    this.solicitarPreenchimentoPerfil();
+                    this.solicitarPreenchimentoPerfilProativo();
                 } else {
-                    this.entrarEmModoEspera();
+                    this.imprimirMenuPrincipal("Sistemas operando com 100% de integridade. Qual central deseja acessar?");
                 }
             }
 
-            // --- FLUXO 1: TOUR GUIADO ---
+            // Mapeador de exibição estruturada do Menu Principal
+            imprimirMenuPrincipal(mensagemInicial) {
+                const txtContainer = document.getElementById('pestbot-text-container');
+                let htmlMenu = `<p>${mensagemInicial}</p><ul class="pestbot-menu-list">`;
+                
+                this.modulos.forEach(mod => {
+                    htmlMenu += `
+                        <li class="pestbot-menu-item" onclick="pestBot.executarRoteamento(${mod.num})">
+                            <span class="pestbot-badge">${mod.num}</span> <span>${mod.nome}</span>
+                        </li>`;
+                });
+                
+                htmlMenu += `
+                    <li class="pestbot-menu-item" style="border-style: dashed;" onclick="pestBot.reiniciarTourCompleto()">
+                        <span class="pestbot-badge" style="background:#64748b;"><i class="fa-solid fa-sync"></i></span> <span>Refazer Tour Guiado</span>
+                    </li>
+                </ul>`;
+                
+                txtContainer.innerHTML = htmlMenu;
+            }
+
+            // Processador inteligente do campo de input (Texto ou Número)
+            processarEntradaTxt() {
+                const inputEl = document.getElementById('pestbot-cmd-input');
+                if (!inputEl) return;
+                
+                const entrada = inputEl.value.trim().toLowerCase();
+                inputEl.value = ""; // Limpa a linha de comandos
+                
+                if (entrada === "") return;
+
+                // Tenta analisar se o usuário digitou um número válido do menu
+                const numComando = parseInt(entrada, 10);
+                if (!isNaN(numComando) && numComando >= 1 && numComando <= this.modulos.length) {
+                    this.executarRoteamento(numComando);
+                    return;
+                }
+
+                // Atalhos de comandos por texto escrito
+                if (entrada.includes("tour") || entrada.includes("ajuda") || entrada === "6") {
+                    this.reiniciarTourCompleto();
+                    return;
+                }
+                if (entrada.includes("perfil") || entrada.includes("sobre") || entrada.includes("empresa")) {
+                    this.executarRoteamento(4);
+                    return;
+                }
+                if (entrada.includes("config") || entrada.includes("ajuste")) {
+                    this.executarRoteamento(5);
+                    return;
+                }
+                if (entrada.includes("monitor") || entrada.includes("mapa")) {
+                    this.executarRoteamento(1);
+                    return;
+                }
+
+                // Fallback para entradas não reconhecidas pelo Core do Bot
+                const txtContainer = document.getElementById('pestbot-text-container');
+                txtContainer.innerHTML = `
+                    <p style="color:#ef4444;"><i class="fa-solid fa-circle-xmark"></i> Comando <strong>"${entrada}"</strong> não reconhecido.</p>
+                    <p>Digite apenas o <strong>número correspondente</strong> ou selecione uma das opções abaixo:</p>
+                    <button class="pestbot-btn" onclick="pestBot.avaliarEstadoDoUsuario()">Voltar ao Menu Principal</button>
+                `;
+            }
+
+            // Injetor Dinâmico de Roteamento Core - Aciona seu script de navegação nativo!
+            executarRoteamento(idModulo) {
+                this.limparHighlightsGerais();
+                const dadosModulo = this.modulos.find(m => m.num === idModulo);
+                
+                if (!dadosModulo) return;
+
+                // Seleciona dinamicamente a coleção de botões da sua sidebar
+                const botoesSidebar = document.querySelectorAll('.nav-buttons .nav-btn');
+                
+                if (botoesSidebar && botoesSidebar.length >= idModulo) {
+                    const botaoAlvo = botoesSidebar[idModulo - 1]; // Array começa em 0
+                    
+                    // Executa a sua própria função global "navegar" injetando o contexto de estilo correto!
+                    if (typeof navegar === "function") {
+                        navegar(botaoAlvo, dadosModulo.file);
+                        
+                        const txtContainer = document.getElementById('pestbot-text-container');
+                        txtContainer.innerHTML = `
+                            <p style="color: var(--primary, #16a34a); font-weight: 600;">
+                                <i class="fa-solid fa-circle-check"></i> Redirecionando com sucesso!
+                            </p>
+                            <p>Você foi movido para o módulo de <strong>${dadosModulo.nome}</strong> através do Terminal.</p>
+                            <button class="pestbot-btn" style="margin-top:10px;" onclick="pestBot.avaliarEstadoDoUsuario()"><i class="fa-solid fa-bars"></i> Ver Menu</button>
+                        `;
+                    } else {
+                        // Backup de segurança caso a função não esteja no escopo global
+                        const iframe = document.getElementById('telaExterna');
+                        if (iframe) iframe.src = dadosModulo.file;
+                    }
+                }
+            }
+
+            // --- INTERCEPTAÇÃO PROATIVA: ERRO DE PERFIL INCOMPLETO ---
+            solicitarPreenchimentoPerfilProativo() {
+                const txt = document.getElementById('pestbot-text-container');
+                txt.innerHTML = `
+                    <div class="alert-pulse">
+                        <strong style="color: #d97706;"><i class="fa-solid fa-triangle-exclamation"></i> Inconsistência de Dados</strong><br>
+                        O perfil institucional da sua Dedetizadora está sem descrição no banco de dados.
+                    </div>
+                    <p>Escolha o que fazer:</p>
+                    <ul class="pestbot-menu-list">
+                        <li class="pestbot-menu-item" style="background: rgba(22, 163, 74, 0.1); border-color: var(--primary);" onclick="pestBot.executarRoteamento(4)">
+                            <span class="pestbot-badge">4</span> <strong>Corrigir Agora (Recomendado)</strong>
+                        </li>
+                        <li class="pestbot-menu-item" onclick="pestBot.imprimirMenuPrincipal('Ignorando por enquanto... Qual painel quer ver?')">
+                            <span class="pestbot-badge" style="background:#475569;"><i class="fa-solid fa-forward"></i></span> Ignorar Aviso e ver Menu
+                        </li>
+                    </ul>
+                `;
+            }
+
+            // --- ESTÁGIO: TOUR INTERATIVO EM CAMADAS ---
             iniciarTourGuiado() {
                 const txt = document.getElementById('pestbot-text-container');
                 const alvo = document.getElementById('passo-1-perfil');
-                
                 if(alvo) alvo.classList.add('pestbot-highlight');
 
                 txt.innerHTML = `
-                    <p><strong>Olá! Sou o PestBot.</strong><br>Bem-vindo ao seu painel corporativo. Aqui à esquerda fica o seu perfil operacional.</p>
+                    <p><strong>[Passo 1 de 2] - Identidade Operacional</strong><br>Este bloco gerencia as credenciais da sua equipe e a imagem de exibição do painel.</p>
                     <div class="pestbot-actions">
-                        <button class="pestbot-btn" onclick="pestBot.tourPasso2()">Continuar <i class="fa-solid fa-arrow-right"></i></button>
+                        <button class="pestbot-btn" onclick="pestBot.tourPasso2()">Avançar Tour <i class="fa-solid fa-chevron-right"></i></button>
                     </div>
                 `;
             }
 
             tourPasso2() {
                 document.getElementById('passo-1-perfil')?.classList.remove('pestbot-highlight');
-                
                 const txt = document.getElementById('pestbot-text-container');
                 const alvo = document.getElementById('passo-2-monitoramento');
-                
                 if(alvo) alvo.classList.add('pestbot-highlight');
 
                 txt.innerHTML = `
-                    <p><strong>O Coração da Operação:</strong><br>Aqui no <em>Monitoramento</em> você gerencia as solicitações e rastreia seus técnicos por satélite.</p>
+                    <p><strong>[Passo 2 de 2] - Monitoramento em Tempo Real</strong><br>Sua central de ordens de serviço. Os dados do mapa via satélite convergem exatamente para cá.</p>
                     <div class="pestbot-actions">
-                        <button class="pestbot-btn" onclick="pestBot.finalizarTour()">Entendi!</button>
+                        <button class="pestbot-btn" onclick="pestBot.finalizarTour()">Finalizar e Abrir Painel</button>
                     </div>
                 `;
             }
 
             finalizarTour() {
-                document.getElementById('passo-2-monitoramento')?.classList.remove('pestbot-highlight');
+                this.limparHighlightsGerais();
                 localStorage.setItem('pestbot_tutorial_completo', 'true');
-                
-                // Transição fluida para checar o perfil
-                const txt = document.getElementById('pestbot-text-container');
-                txt.innerHTML = `<p>Excelente! Analisando os dados da sua unidade...</p>`;
-                
-                setTimeout(() => {
-                    this.avaliarEstadoDoUsuario();
-                }, 1500);
+                this.avaliarEstadoDoUsuario();
             }
 
-            // --- FLUXO 2: REDIRECIONAMENTO DE DADOS ---
-            solicitarPreenchimentoPerfil() {
-                const txt = document.getElementById('pestbot-text-container');
-                txt.innerHTML = `
-                    <p><strong style="color: #eab308;"><i class="fa-solid fa-triangle-exclamation"></i> Atenção Necessária:</strong><br>
-                    Notei que o perfil institucional da sua dedetizadora está incompleto. Sem ele, os clientes não poderão te encontrar no App.</p>
-                    <div class="pestbot-actions">
-                        <button class="pestbot-btn" onclick="pestBot.direcionarParaSobre()">Completar Agora</button>
-                    </div>
-                `;
+            reiniciarTourCompleto() {
+                localStorage.removeItem('pestbot_tutorial_completo');
+                this.iniciarTourGuiado();
             }
 
-            direcionarParaSobre() {
-                // Remove destaques se houver
+            limparHighlightsGerais() {
                 document.getElementById('passo-1-perfil')?.classList.remove('pestbot-highlight');
                 document.getElementById('passo-2-monitoramento')?.classList.remove('pestbot-highlight');
-                
-                // Simula o clique no botão do menu "Sobre a Empresa"
-                const btnSobre = document.getElementById('alvo-sobre-empresa');
-                if (btnSobre) {
-                    btnSobre.click(); // Usa a sua própria função navegar() existente!
-                    
-                    const txt = document.getElementById('pestbot-text-container');
-                    txt.innerHTML = `
-                        <p><strong>Perfeito!</strong><br>Preencha os campos à direita para gerar a sua vitrine no aplicativo. Assim que salvar, o aviso sumirá.</p>
-                        <div class="pestbot-actions">
-                            <button class="pestbot-btn" onclick="pestBot.entrarEmModoEspera()">Ocultar Aviso</button>
-                        </div>
-                    `;
-                }
             }
 
-            // --- FLUXO 3: STANDBY ---
-            entrarEmModoEspera() {
-                const txt = document.getElementById('pestbot-text-container');
-                txt.innerHTML = `
-                    <p>Sistemas operacionais normalizados. Estou monitorando o fluxo de dados em segundo plano. 🛡️</p>
-                `;
-                
-                // Oculta o bot após 5 segundos em stand by para limpar a tela
-                setTimeout(() => {
-                    const widget = document.getElementById('pestbot-widget');
-                    if (widget) widget.classList.add('hidden');
-                }, 5000);
-            }
-
-            // --- CONTROLE MESTRE ---
             toggleBot(ativar) {
                 if (ativar) {
                     localStorage.setItem('pestbot_status', 'active');
@@ -362,11 +531,7 @@
                     localStorage.setItem('pestbot_status', 'disabled');
                     this.isActive = false;
                     this.hideBotUI();
-                    
-                    // Limpeza de rastros do tutorial
-                    document.getElementById('passo-1-perfil')?.classList.remove('pestbot-highlight');
-                    document.getElementById('passo-2-monitoramento')?.classList.remove('pestbot-highlight');
-                    
+                    this.limparHighlightsGerais();
                     const btnLigar = document.getElementById('btn-ligar-bot');
                     if(btnLigar) btnLigar.style.display = 'flex';
                 }
@@ -378,11 +543,10 @@
             }
         }
 
-        // Inicializa o assistente apenas após a árvore DOM do Dashboard ser carregada
+        // Inicialização em Sandbox Isolado
         document.addEventListener("DOMContentLoaded", () => {
             window.pestBot = new PestBotManager();
         });
-
     </script>
     <script src="js/dashboard_empresa.js"></script>
 </body>
