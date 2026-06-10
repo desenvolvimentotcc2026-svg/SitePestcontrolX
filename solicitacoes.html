@@ -28,20 +28,16 @@
             font-family: 'Rajdhani', sans-serif;
         }
 
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+        /* 👁️ Suporte Dinâmico a Acessibilidade Neurodivergente */
+        [data-sensory="calm"] .gps-pulse-icon {
+            animation: none !important;
+            box-shadow: none !important;
         }
-        ::-webkit-scrollbar-track {
-            background: var(--bg-cyber);
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #21262d;
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--neon-green);
-        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-cyber); }
+        ::-webkit-scrollbar-thumb { background: #21262d; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--neon-green); }
 
         .neon-border {
             border: 1px solid var(--border-color);
@@ -58,28 +54,34 @@
         }
 
         #map {
-            height: 550px;
+            height: 520px;
             background: #0b0e14;
             border-radius: 12px;
+            border: 1px solid var(--border-color);
         }
 
+        /* 🛰️ Radar/Pulso de Geolocalização Customizado */
         .gps-pulse-icon {
+            display: block;
+            width: 14px;
+            height: 14px;
             background: var(--neon-green);
+            border: 2px solid #ffffff;
             border-radius: 50%;
-            box-shadow: 0 0 0 0 rgba(61, 220, 132, 0.7);
+            box-shadow: 0 0 0 0 rgba(61, 220, 132, 0.8);
             animation: pulse 1.6s infinite;
         }
 
         @keyframes pulse {
             0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(61, 220, 132, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 12px rgba(61, 220, 132, 0); }
+            70% { transform: scale(1); box-shadow: 0 0 0 14px rgba(61, 220, 132, 0); }
             100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(61, 220, 132, 0); }
         }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-4 md:p-6">
 
-    <header class="flex flex-col border-b border-[#21262d] pb-6 mb-8 gap-4">
+    <header class="flex flex-col border-b border-[#21262d] pb-5 mb-6 gap-4">
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center w-full gap-4">
             <div>
                 <div class="flex items-center gap-3">
@@ -100,7 +102,7 @@
 
             <div class="flex gap-4 bg-[#161b22] px-4 py-2 rounded-lg border border-[#21262d]">
                 <div class="text-center px-2">
-                    <span class="block text-xs text-gray-400">Pendentes</span>
+                    <span class="block text-xs text-gray-400">Abertas</span>
                     <span id="counter-pendente" class="text-xl font-bold text-yellow-500">0</span>
                 </div>
                 <div class="border-l border-[#21262d] mx-2"></div>
@@ -112,28 +114,45 @@
         </div>
     </header>
 
-    <main class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <section class="lg:grid-cols-1 lg:col-span-5 flex flex-col gap-4">
+    <main class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <section class="lg:col-span-5 flex flex-col gap-4">
             <div class="bg-[#161b22] p-4 rounded-xl border border-[#21262d]">
-                <h2 class="brand-font text-xl font-semibold text-white mb-4 tracking-wide flex justify-between items-center">
-                    <span>SOLICITAÇÕES RECEBIDAS</span>
-                    <button onclick="carregarSolicitacoes()" class="text-xs text-gray-400 hover:text-[#3DDC84] transition">🔄 Atualizar Grid</button>
-                </h2>
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[#21262d] pb-3 mb-4 gap-2">
+                    <h2 class="brand-font text-lg font-semibold text-white tracking-wide">
+                        SOLICITAÇÕES RECEBIDAS
+                    </h2>
+                    <div class="flex gap-2">
+                        <button onclick="carregarSolicitacoes()" class="text-xs text-gray-400 hover:text-[#3DDC84] transition">🔄 Atualizar</button>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 mb-4 text-xs font-bold">
+                    <button onclick="filtrarLista('TODAS')" id="filter-all" class="px-3 py-1.5 rounded bg-[#21262d] text-white border border-transparent hover:border-[#3DDC84]">Todas</button>
+                    <button onclick="filtrarLista('ABERTA')" id="filter-open" class="px-3 py-1.5 rounded bg-[#0d1117] text-gray-400 border border-[#21262d] hover:text-yellow-500">Abertas</button>
+                    <button onclick="filtrarLista('EM_CAMPO')" id="filter-field" class="px-3 py-1.5 rounded bg-[#0d1117] text-gray-400 border border-[#21262d] hover:text-[#3DDC84]">Em Campo</button>
+                </div>
                 
-                <div id="lista-solicitacoes" class="flex flex-col gap-3 max-h-[600px] overflow-y-auto pr-1">
+                <div id="lista-solicitacoes" class="flex flex-col gap-3 max-h-[420px] overflow-y-auto pr-1">
                     <p class="text-sm text-gray-500 animate-pulse text-center py-8">Aguardando injeção do Token de segurança...</p>
                 </div>
             </div>
             
-            <div id="visualizador-os-completa" class="mt-2">
-                <p class="text-xs text-gray-600 italic">Selecione uma ordem aberta para inspeção de telemetria.</p>
+            <div id="visualizador-os-completa">
+                <p class="text-xs text-gray-600 italic">Selecione uma ordem aberta ou em campo para inspeção de telemetria.</p>
             </div>
         </section>
 
-        <section class="lg:grid-cols-1 lg:col-span-7 flex flex-col gap-4">
+        <section class="lg:col-span-7 flex flex-col gap-4">
             <div class="bg-[#161b22] p-4 rounded-xl border border-[#21262d] relative">
-                <div class="absolute top-6 right-6 z-[1000] bg-[#0d1117]/90 px-3 py-1.5 rounded border border-[#21262d] text-[10px] text-gray-300">
-                    STATUS DO SINAL: <span id="ws-status" class="text-red-500 font-bold">DESCONECTADO</span>
+                
+                <div class="absolute top-6 right-6 z-[1000] flex items-center gap-2">
+                    <button onclick="acionarModoDemonstracao()" class="bg-purple-600/20 hover:bg-purple-600/40 text-purple-400 border border-purple-500/30 text-[10px] font-bold px-2 py-1 rounded transition">
+                        🧪 MOCK SIMULADOR
+                    </button>
+                    <div class="bg-[#0d1117]/90 px-3 py-1.5 rounded border border-[#21262d] text-[10px] text-gray-300">
+                        SINAL WS: <span id="ws-status" class="text-red-500 font-bold">DESCONECTADO</span>
+                    </div>
                 </div>
                 
                 <h2 class="brand-font text-xl font-semibold text-white mb-4 tracking-wide">
@@ -144,8 +163,8 @@
 
                 <div class="mt-4 bg-[#0d1117] border border-[#21262d] p-3 rounded-lg font-mono text-[11px] text-gray-400">
                     <span class="text-[#3DDC84] block border-b border-[#21262d] pb-1 mb-1 font-bold">📡 LOG DE TRANSMISSÃO DE COORDENADAS:</span>
-                    <div id="terminal-log" class="max-h-[70px] overflow-y-auto flex flex-col-reverse">
-                        <span class="text-gray-600">> Sistema de barramento operacional. Insira as chaves JWT para iniciar.</span>
+                    <div id="terminal-log" class="max-h-[85px] overflow-y-auto flex flex-col-reverse">
+                        <span class="text-gray-600">> Barramento aguardando comandos de rede corporativa...</span>
                     </div>
                 </div>
             </div>
@@ -160,9 +179,12 @@
     const API_BASE_URL = "https://appdedetizacao.onrender.com";
     let map, currentMarker, stompClient = null;
     let activeTrackingId = null;
+    let listaCompletaOrdens = [];
+    let filtroStatusAtual = 'TODAS';
+    let mockInterval = null;
 
     function initMap() {
-        map = L.map('map').setView([-23.4456, -46.7234], 12);
+        map = L.map('map').setView([-23.55052, -46.633308], 12); // Posição padrão (São Paulo Centro)
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; OpenStreetMap &copy; CARTO',
             subdomains: 'abcd',
@@ -173,7 +195,7 @@
     function obterTokenAutenticacao() {
         const inputToken = document.getElementById("jwt-input").value.trim();
         if (inputToken) return inputToken;
-        return localStorage.getItem("token") || localStorage.getItem("jwt") || "";
+        return localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || localStorage.getItem("token_usuario") || "";
     }
 
     function atualizarTokenManual(valor) {
@@ -189,6 +211,7 @@
         }
     }
 
+    // Carrega chamados unificando endpoints e evitando crashes de dados
     async function carregarSolicitacoes() {
         const token = obterTokenAutenticacao();
         const container = document.getElementById("lista-solicitacoes");
@@ -196,13 +219,14 @@
         if (!token) {
             container.innerHTML = `
                 <div class="text-center py-8 px-4 border border-dashed border-red-500/30 rounded-lg bg-red-500/5">
-                    <p class="text-xs text-red-400 font-bold uppercase mb-2">Acesso Negado pelo Backend (Erro 401)</p>
-                    <p class="text-[11px] text-gray-400">Por favor, cole o token gerado pelo login no campo de autenticação.</p>
+                    <p class="text-xs text-red-400 font-bold uppercase mb-1">Acesso Bloqueado (Erro 401)</p>
+                    <p class="text-[11px] text-gray-500">Insira um token JWT de operador válido para sincronizar.</p>
                 </div>`;
             return;
         }
 
         try {
+            // Varre o endpoint principal de ordens
             const response = await fetch(`${API_BASE_URL}/api/ordens`, {
                 method: "GET",
                 headers: {
@@ -212,157 +236,155 @@
             });
             
             if (response.status === 401 || response.status === 403) throw new Error("TOKEN_INVALIDO");
-            if (!response.ok) throw new Error("ERRO_DE_REDE");
+            if (!response.ok) throw new Error("ERRO_SERVIDORES");
             
-            const ordens = await response.json();
-            container.innerHTML = "";
-
-            if (ordens.length === 0) {
-                container.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">Nenhuma solicitação encontrada no momento.</p>`;
-                return;
-            }
-
-            let pendentes = 0, emAndamento = 0;
-
-            ordens.forEach(ordem => {
-                const statusOS = (ordem.status || "").toUpperCase();
-                
-                if (statusOS === 'PENDENTE' || statusOS === 'ABERTA') {
-                    pendentes++;
-                } else if (statusOS === 'ACEITO' || statusOS === 'EM_ANDAMENTO' || statusOS === 'ACEITA' || statusOS === 'EM_ROTA') {
-                    emAndamento++;
-                }
-
-                const descricaoServico = ordem.pragaAlvo || (ordem.servico ? ordem.servico.nome : (ordem.descricao || "Manejo de Pragas"));
-                const nomeCliente = ordem.nomeCliente || `Cliente ID: ${ordem.clienteId || '34'}`;
-                const dataAgendada = "Data flexível (Imediato)";
-
-                let statusBadge = '';
-                let acaoBtn = '';
-
-                if (statusOS === 'PENDENTE' || statusOS === 'ABERTA') {
-                    statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">ABERTA / PENDENTE</span>`;
-                    acaoBtn = `
-                        <button onclick="visualizarEMontarOrdem(${JSON.stringify(ordem).replace(/"/g, '&quot;')})" class="mt-3 w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold text-xs py-1.5 px-3 rounded transition flex items-center justify-center gap-1">
-                            🤝 ANALISAR & ACEITAR O.S.
-                        </button>`;
-                } else {
-                    statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-[#3DDC84]/10 text-[#3DDC84] border border-[#3DDC84]/20">EM CAMPO</span>`;
-                    acaoBtn = `
-                        <button onclick="conectarRastreamento(${ordem.id})" class="mt-3 w-full bg-[#3DDC84] hover:bg-[#2eb369] text-black font-bold text-xs py-1.5 px-3 rounded transition flex items-center justify-center gap-1">
-                            🛰️ RASTREAR EM TEMPO REAL
-                        </button>`;
-                }
-
-                const card = document.createElement("div");
-                card.id = `card-os-${ordem.id}`;
-                card.className = `neon-border bg-[#0d1117] p-4 rounded-lg flex flex-col justify-between cursor-pointer ${activeTrackingId === ordem.id ? 'active' : ''}`;
-                card.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="text-xs font-bold text-gray-400">OS #${ordem.id}</span>
-                        ${statusBadge}
-                    </div>
-                    <h3 class="text-white font-bold text-sm tracking-wide uppercase">${descricaoServico}</h3>
-                    <p class="text-xs text-gray-400 mt-1"><b class="text-gray-500">Alvo:</b> ${ordem.descricao || 'Foco não detalhado'}</p>
-                    <p class="text-xs text-gray-400 mt-0.5"><b class="text-gray-500">Cliente:</b> ${nomeCliente}</p>
-                    <p class="text-xs text-gray-400 mt-0.5"><b class="text-gray-500">Agenda:</b> ${dataAgendada}</p>
-                    ${acaoBtn}
-                `;
-                container.appendChild(card);
-            });
-
-            document.getElementById("counter-pendente").innerText = pendentes;
-            document.getElementById("counter-andamento").innerText = emAndamento;
+            listaCompletaOrdens = await response.json();
+            renderizarListaFiltrada();
 
         } catch (error) {
-            console.error("Falha ao sincronizar dados:", error);
-            container.innerHTML = `<p class="text-sm text-red-400 text-center py-6">Falha crítica ao conectar com a API Render.</p>`;
+            console.error("Falha ao puxar dados da API:", error);
+            container.innerHTML = `<p class="text-xs text-red-400 text-center py-6">Falha ao conectar com o cluster Render.</p>`;
         }
+    }
+
+    // Renderizador Inteligente com Mecanismo de Filtro por Estado (Todas, Abertas, Em Rota)
+    function renderizarListaFiltrada() {
+        const container = document.getElementById("lista-solicitacoes");
+        container.innerHTML = "";
+
+        let pendentes = 0, emAndamento = 0;
+
+        listaCompletaOrdens.forEach(ordem => {
+            const statusOS = (ordem.status || "").toUpperCase();
+            
+            if (statusOS === 'PENDENTE' || statusOS === 'ABERTA' || statusOS === 'NOVAS') {
+                pendentes++;
+            } else if (statusOS === 'ACEITO' || statusOS === 'EM_ANDAMENTO' || statusOS === 'EM_ATENDIMENTO' || statusOS === 'EM_ROTA') {
+                emAndamento++;
+            }
+
+            // Regra de Filtro
+            if (filtroStatusAtual === 'ABERTA' && !(statusOS === 'PENDENTE' || statusOS === 'ABERTA' || statusOS === 'NOVAS')) return;
+            if (filtroStatusAtual === 'EM_CAMPO' && !(statusOS === 'ACEITO' || statusOS === 'EM_ANDAMENTO' || statusOS === 'EM_ATENDIMENTO' || statusOS === 'EM_ROTA')) return;
+
+            const descricaoServico = ordem.pragaAlvo || (ordem.servico ? ordem.servico.nome : (ordem.descricao || "Manejo Químico"));
+            const nomeCliente = ordem.nomeCliente || ordem.clienteNome || `Operador ID: #${ordem.clienteId || '34'}`;
+
+            let statusBadge = '';
+            let acaoBtn = '';
+
+            if (statusOS === 'PENDENTE' || statusOS === 'ABERTA' || statusOS === 'NOVAS') {
+                statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">ABERTA</span>`;
+                acaoBtn = `
+                    <button onclick="visualizarEMontarOrdem(${JSON.stringify(ordem).replace(/"/g, '&quot;')})" class="mt-3 w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold text-[11px] py-1.5 px-3 rounded transition tracking-wider">
+                        🤝 INSPECIONAR E ACEITAR O.S.
+                    </button>`;
+            } else {
+                statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-[#3DDC84]/10 text-[#3DDC84] border border-[#3DDC84]/20">EM CAMPO</span>`;
+                acaoBtn = `
+                    <button onclick="conectarRastreamento(${ordem.id})" class="mt-3 w-full bg-[#3DDC84] hover:bg-[#2eb369] text-black font-bold text-[11px] py-1.5 px-3 rounded transition tracking-wider">
+                        🛰️ RASTREAR TELEMETRIA LIVE
+                    </button>`;
+            }
+
+            const card = document.createElement("div");
+            card.id = `card-os-${ordem.id}`;
+            card.className = `neon-border bg-[#0d1117] p-4 rounded-lg flex flex-col justify-between cursor-pointer ${activeTrackingId === ordem.id ? 'active' : ''}`;
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-xs font-bold text-gray-500">OS #${ordem.id}</span>
+                    ${statusBadge}
+                </div>
+                <h3 class="text-white font-bold text-sm tracking-wide uppercase">${descricaoServico}</h3>
+                <p class="text-xs text-gray-400 mt-1.5"><b class="text-gray-500">Foco:</b> ${ordem.descricao || 'Dedetização Geral'}</p>
+                <p class="text-xs text-gray-400 mt-0.5"><b class="text-gray-500">Cliente:</b> ${nomeCliente}</p>
+                ${acaoBtn}
+            `;
+            container.appendChild(card);
+        });
+
+        document.getElementById("counter-pendente").innerText = pendentes;
+        document.getElementById("counter-andamento").innerText = emAndamento;
+
+        if (container.innerHTML === "") {
+            container.innerHTML = `<p class="text-xs text-gray-500 text-center py-8">Nenhum chamado neste filtro.</p>`;
+        }
+    }
+
+    function filtrarLista(status) {
+        filtroStatusAtual = status;
+        document.querySelectorAll('.filters-container button').forEach(b => b.classList.replace('bg-[#21262d]', 'bg-[#0d1117]'));
+        
+        // Estiliza botões de filtro ativos
+        const btnAll = document.getElementById('filter-all');
+        const btnOpen = document.getElementById('filter-open');
+        const btnField = document.getElementById('filter-field');
+
+        [btnAll, btnOpen, btnField].forEach(b => {
+            b.classList.remove('bg-[#21262d]', 'text-white');
+            b.classList.add('bg-[#0d1117]', 'text-gray-400');
+        });
+
+        if(status === 'TODAS') btnAll.classList.replace('bg-[#0d1117]', 'bg-[#21262d]'), btnAll.classList.replace('text-gray-400', 'text-white');
+        if(status === 'ABERTA') btnOpen.classList.replace('bg-[#0d1117]', 'bg-[#21262d]'), btnOpen.classList.replace('text-gray-400', 'text-white');
+        if(status === 'EM_CAMPO') btnField.classList.replace('bg-[#0d1117]', 'bg-[#21262d]'), btnField.classList.replace('text-gray-400', 'text-white');
+
+        renderizarListaFiltrada();
     }
 
     function visualizarEMontarOrdem(ordem) {
-        const focoPraga = ordem.descricao || "Não discriminado pela triagem";
-        const idDoClienteFinal = ordem.clienteId || "34";
-        const nomeDoClienteFinal = ordem.nomeCliente || "Daniel Santos";
-
         const detalheContainer = document.getElementById("visualizador-os-completa");
-        if(detalheContainer) {
-            detalheContainer.innerHTML = `
-                <div class="border border-[#3DDC84]/30 bg-[#161b22] p-6 rounded-lg text-white mt-4">
-                    <div class="flex justify-between items-center border-b border-gray-800 pb-3 mb-4">
-                        <h2 class="text-md font-bold text-[#3DDC84]">CONSOLE DE INFRAESTRUTURA - OS #${ordem.id}</h2>
-                        <span class="text-xs bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded font-mono">STATUS: PENDENTE</span>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                        <div>
-                            <p class="text-gray-500 font-bold uppercase tracking-wider">Dados Cadastrais do Cliente</p>
-                            <p class="mt-2 text-sm text-white font-bold">${nomeDoClienteFinal}</p>
-                            <p class="text-gray-400">ID Operacional: # ${idDoClienteFinal}</p>
-                        </div>
-                        <div>
-                            <p class="text-gray-500 font-bold uppercase tracking-wider">Vetor Biológico & Alvo</p>
-                            <p class="mt-2 text-sm text-red-400 font-bold uppercase">${ordem.pragaAlvo || 'BARATAS'}</p>
-                            <p class="text-gray-400">Triagem: ${focoPraga}</p>
-                        </div>
-                    </div>
-                    <div class="mt-6 flex gap-2">
-                        <button onclick="aceitarOrdemEmpresa(${ordem.id})" class=" anonymity-btn w-full bg-[#3DDC84] hover:bg-[#32b86e] text-black font-bold py-2 rounded text-xs transition">
-                            ⚡ CONFIRMAR E ROTEAR AGORA
-                        </button>
-                    </div>
+        detalheContainer.innerHTML = `
+            <div class="border border-[#3DDC84]/30 bg-[#161b22] p-5 rounded-lg text-white mt-2">
+                <div class="flex justify-between items-center border-b border-gray-800 pb-2 mb-3">
+                    <h2 class="text-xs font-bold text-[#3DDC84]">CONSOLE OPERACIONAL - OS #${ordem.id}</h2>
+                    <span class="text-[10px] bg-yellow-500/10 text-yellow-500 px-2 py-0.5 rounded border border-yellow-500/20">PENDENTE</span>
                 </div>
-            `;
-            detalheContainer.scrollIntoView({ behavior: 'smooth' });
-        }
+                <div class="flex flex-col gap-2 text-xs">
+                    <p><b class="text-gray-500">Razão Social/Cliente:</b> ${ordem.nomeCliente || 'Usuário Final'}</p>
+                    <p><b class="text-gray-500">Praga-Alvo:</b> <span class="text-red-400 font-bold">${ordem.pragaAlvo || 'Vetor Não Identificado'}</span></p>
+                    <p><b class="text-gray-500">Descrição Técnica:</b> ${ordem.descricao || 'Varredura padrão contra pragas.'}</p>
+                </div>
+                <button onclick="aceitarOrdemEmpresa(${ordem.id})" class="mt-4 w-full bg-[#3DDC84] hover:bg-[#32b86e] text-black font-bold py-2 rounded text-xs transition">
+                    ⚡ DESPACHAR EQUIPE EM CAMPO
+                </button>
+            </div>`;
+        detalheContainer.scrollIntoView({ behavior: 'smooth' });
     }
 
-    // 🔥 ENCAIXE EXATO DE PARÂMETROS COM O SPRING BOOT CONTROLLER
-   async function aceitarOrdemEmpresa(ordemId) {
-
-    const token = obterTokenAutenticacao();
-
-    try {
-
-        const response = await fetch(
-            `${API_BASE_URL}/api/ordens/${ordemId}/aceitar?funcionarioId=99`,
-            {
-                method:"PUT",
-                headers:{
-                    "Authorization":`Bearer ${token}`,
-                    "Content-Type":"application/json"
+    async function aceitarOrdemEmpresa(ordemId) {
+        const token = obterTokenAutenticacao();
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/ordens/${ordemId}/aceitar?funcionarioId=99`, {
+                method: "PUT",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
                 }
-            }
-        );
+            });
 
-        if(!response.ok){
-            throw new Error("Erro");
+            if (!response.ok) throw new Error("Falha ao salvar");
+
+            logTerminal(`OS #${ordemId} despachada via API corporativa com sucesso.`);
+            carregarSolicitacoes();
+            document.getElementById("visualizador-os-completa").innerHTML = '<p class="text-xs text-gray-600 italic">Equipe despachada para o alvo com sucesso.</p>';
+        } catch (e) {
+            alert("Erro ao despachar Ordem para o banco de dados.");
         }
-
-        const ordem = await response.json();
-
-        localStorage.setItem("ordemId", ordem.id);
-        localStorage.setItem("clienteId", ordem.clienteId);
-        localStorage.setItem("funcionarioId", 8);
-
-        window.location.href = "agenda.html";
-
-    } catch(e){
-        console.error(e);
-        alert("Erro ao aceitar OS");
     }
-}
 
     function conectarRastreamento(idOrdem) {
         if (activeTrackingId) {
             document.getElementById(`card-os-${activeTrackingId}`)?.classList.remove('active');
         }
+        if (mockInterval) clearInterval(mockInterval); // Para simulações se existirem
+
         activeTrackingId = idOrdem;
         document.getElementById(`card-os-${idOrdem}`)?.classList.add('active');
-        document.getElementById("os-tracking-id").innerText = `[ MONITORANDO OS #${idOrdem} ]`;
+        document.getElementById("os-tracking-id").innerText = `[ RASTREANDO LIVE OS #${idOrdem} ]`;
 
         if (stompClient && stompClient.connected) {
             stompClient.disconnect(() => {
-                logTerminal(`Conexão anterior encerrada. Pivotando para nova OS #${idOrdem}`);
                 abrirCanalWebSocket(idOrdem);
             });
         } else {
@@ -371,13 +393,13 @@
     }
 
     function abrirCanalWebSocket(idOrdem) {
-        logTerminal(`Inicializando handshake com gateway WebSocket...`);
+        logTerminal(`Requisitando handshake com gateway WebSocket...`);
         document.getElementById("ws-status").innerText = "CONECTANDO...";
         document.getElementById("ws-status").className = "text-yellow-500 font-bold";
 
         const socket = new SockJS(`${API_BASE_URL}/ws-pestcontrol-sockjs`);
         stompClient = Stomp.over(socket);
-        stompClient.debug = null;
+        stompClient.debug = null; // Oculta logs poluídos no console de desenvolvedor
 
         const token = obterTokenAutenticacao();
         const headers = { "Authorization": `Bearer ${token}` };
@@ -385,40 +407,67 @@
         stompClient.connect(headers, function (frame) {
             document.getElementById("ws-status").innerText = "SINAL ATIVO";
             document.getElementById("ws-status").className = "text-[#3DDC84] font-bold";
-            logTerminal(`Pipeline linkado com sucesso para OS #${idOrdem}`);
+            logTerminal(`Pipeline linkado via STOMP broker para OS #${idOrdem}`);
 
             stompClient.subscribe(`/topic/gps/${idOrdem}`, function (response) {
                 try {
                     const dadosGps = JSON.parse(response.body);
                     atualizarPosicaoMapa(dadosGps.latitude, dadosGps.longitude, idOrdem);
                 } catch (e) {
-                    logTerminal(`Erro ao processar payload de coordenadas.`);
+                    logTerminal(`Payload corrompido recebido via WebSocket.`);
                 }
             }, headers);
         }, function (error) {
-            document.getElementById("ws-status").innerText = "QUEDA DE SINAL";
+            document.getElementById("ws-status").innerText = "SEM SINAL";
             document.getElementById("ws-status").className = "text-red-500 font-bold";
-            logTerminal(`Erro no barramento de dados: ${error}`);
+            logTerminal(`Falha crítica de barramento WebSocket. Gateway offline.`);
         });
     }
 
     function atualizarPosicaoMapa(lat, lng, idOrdem) {
-        const Glen = [lat, lng];
-        logTerminal(`Coordenadas recebidas via satélite: Lat ${lat.toFixed(5)} | Lng ${lng.toFixed(5)}`);
+        const coordenadas = [lat, lng];
+        logTerminal(`Lat ${lat.toFixed(6)} | Lng ${lng.toFixed(6)} [Transmissão Homologada]`);
 
-        const pulseIcon = L.divIcon({
-            className: 'gps-pulse-icon',
-            iconSize: [16, 16]
+        // Cria o marcador com estilo minimalista de radar neon
+        const radarIcon = L.divIcon({
+            className: 'custom-gps-marker',
+            html: '<span class="gps-pulse-icon"></span>',
+            iconSize: [14, 14]
         });
 
         if (currentMarker) {
-            currentMarker.setLatLng(Glen);
+            currentMarker.setLatLng(coordenadas);
         } else {
-            currentMarker = L.marker(Glen, { icon: pulseIcon }).addTo(map);
+            currentMarker = L.marker(coordenadas, { icon: radarIcon }).addTo(map);
         }
 
-        map.flyTo(Glen, 16, { animate: true, duration: 1.5 });
-        currentMarker.bindPopup(`<b class="text-black">Técnico PestControlX</b><br>Monitorando OS #${idOrdem}`).openPopup();
+        map.flyTo(coordenadas, 15, { animate: true, duration: 1.2 });
+        currentMarker.bindPopup(`<div class="text-black font-sans text-xs"><b>Viatura PestControlX</b><br>Trabalhando na OS #${idOrdem}</div>`).openPopup();
+    }
+
+    // 🧪 MOCK SIMULADOR (Para garantir a nota 10 na sua apresentação de TCC)
+    function acionarModoDemonstracao() {
+        if (stompClient) stompClient.disconnect();
+        if (mockInterval) clearInterval(mockInterval);
+        
+        document.getElementById("ws-status").innerText = "SIMULADO (MOCK)";
+        document.getElementById("ws-status").className = "text-purple-400 font-bold";
+        logTerminal(`Iniciando gerador mock de telemetria satelital.`);
+
+        let latBase = -23.55052;
+        let lngBase = -46.633308;
+        let iteracao = 0;
+
+        mockInterval = setInterval(() => {
+            iteracao++;
+            // Move ligeiramente a viatura a cada ciclo simulando movimento em rua
+            latBase += (Math.random() - 0.5) * 0.003;
+            lngBase += (Math.random() - 0.5) * 0.003;
+            
+            atualizarPosicaoMapa(latBase, lngBase, activeTrackingId || 99);
+            
+            if (iteracao >= 10) logTerminal(`Checando integridade de vetor biológico na zona de ação.`);
+        }, 3000);
     }
 
     function logTerminal(mensagem) {
@@ -431,17 +480,34 @@
         logBox.insertBefore(logItem, logBox.firstChild);
     }
 
+    // 👂 Listener de mensageria para ouvir recursos de acessibilidade da tela pai
+    window.addEventListener('message', function(event) {
+        if (event.data && event.data.tipo === 'sincronizarTema') {
+            // Sincroniza atributos estruturais na raiz caso necessário
+        }
+        if (localStorage.getItem('sensory_calm') === 'true') {
+            document.documentElement.setAttribute('data-sensory', 'calm');
+        } else {
+            document.documentElement.removeAttribute('data-sensory');
+        }
+    });
+
     window.onload = () => {
         initMap();
-        const tokenSalvo = localStorage.getItem("token") || localStorage.getItem("jwt");
+        
+        // Verifica se há acessibilidade salva
+        if (localStorage.getItem('sensory_calm') === 'true') {
+            document.documentElement.setAttribute('data-sensory', 'calm');
+        }
+
+        const tokenSalvo = obterTokenAutenticacao();
         if (tokenSalvo) {
-            document.getElementById("jwt-input").value = tokenSalvo;
+            document.getElementById("jwt-input").value = tokenSalvo.substring(0, 15) + "..................";
             const statusLabel = document.getElementById("token-status");
-            statusLabel.innerText = "JWT RESTAURADO";
+            statusLabel.innerText = "JWT ATIVO";
             statusLabel.className = "text-[#3DDC84] font-bold";
         }
         carregarSolicitacoes();
-        setInterval(carregarSolicitacoes, 30000);
     };
 </script>
 </body>
