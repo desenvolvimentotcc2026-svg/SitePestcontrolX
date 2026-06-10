@@ -3,23 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PestControlX - Gestão de Clientes</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <title>PestControlX - Clientes</title>
     <style>
         :root {
-            --primary: #3DDC84; 
-            --surface: #161B26;
-            --border: #2D3748;
-            --bg-dark: #0F0F12;
-            --text-muted: #a0aec0;
+            --primary: #16a34a;
+            --bg-global: #f8fafc;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
         }
 
+        [data-theme="dark"] {
+            --primary: #22c55e;
+            --bg-global: #0f172a;
+            --surface: #1e293b;
+            --border: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
+
         body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background: #0F0F12;
-            color: #fff;
-            margin: 0;
+            background-color: var(--bg-global);
+            color: var(--text-main);
             padding: 25px;
+            transition: all 0.3s ease;
         }
 
         .header-dashboard {
@@ -33,137 +44,119 @@
 
         .search-bar { display: flex; gap: 12px; margin-bottom: 20px; }
         .search-bar input {
-            flex: 1; padding: 12px 15px; background: #11141D; color: #fff;
-            border: 1px solid var(--border); border-radius: 6px; outline: none;
-            font-size: 14px;
+            flex: 1; padding: 12px 15px; background: var(--surface); color: var(--text-main);
+            border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 14px;
         }
         .search-bar input:focus { border-color: var(--primary); }
         
         .btn-tech {
-            background: var(--primary); color: #000; border: none;
-            padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer;
-            display: flex; align-items: center; gap: 8px; font-size: 13px; text-transform: uppercase;
+            background: var(--primary); color: #fff; border: none; padding: 12px 20px;
+            border-radius: 8px; font-weight: bold; cursor: pointer; display: flex;
+            align-items: center; gap: 8px; font-size: 13px; text-transform: uppercase;
         }
 
-        table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 8px; overflow: hidden; }
-        th { background: rgba(61, 220, 132, 0.08); padding: 14px; text-align: left; color: var(--primary); font-size: 13px; text-transform: uppercase; border-bottom: 1px solid var(--border);}
-        td { padding: 14px; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 14px; }
-        tr:hover td { background: rgba(255,255,255,0.01); }
+        table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+        th { background: rgba(22, 163, 74, 0.05); padding: 14px; text-align: left; color: var(--primary); font-size: 12px; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+        td { padding: 14px; border-bottom: 1px solid var(--border); font-size: 14px; }
 
-        .btn-detalhes { background: #11141D; color: var(--primary); border: 1px solid var(--primary); padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s;}
-        .btn-detalhes:hover { background: var(--primary); color: #000; }
+        .btn-detalhes { background: transparent; color: var(--primary); border: 1px solid var(--primary); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s;}
+        .btn-detalhes:hover { background: var(--primary); color: #fff; }
         
-        .card-perfil { background: var(--surface); border-radius: 10px; padding: 20px; display: flex; gap: 20px; margin-bottom: 20px; border: 1px solid var(--border); }
-        .avatar { width: 55px; height: 55px; background: rgba(61,220,132,0.1); border: 1px solid var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-        .secao-titulo { background: rgba(61, 220, 132, 0.08); color: var(--primary); padding: 8px 15px; border-radius: 4px; font-weight: bold; margin-top: 20px; margin-bottom: 12px; font-size: 12px; letter-spacing: 0.5px;}
-        .secao-conteudo p { margin: 8px 0; padding-bottom: 6px; font-size: 14px; color: #cbd5e1;}
+        .card-perfil { background: var(--surface); border-radius: 12px; padding: 24px; display: flex; gap: 20px; margin-bottom: 20px; border: 1px solid var(--border); }
+        .avatar { width: 50px; height: 50px; background: rgba(22,163,74,0.1); border: 1px solid var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .secao-titulo { background: rgba(22, 163, 74, 0.05); color: var(--primary); padding: 8px 15px; border-radius: 6px; font-weight: bold; margin-top: 25px; margin-bottom: 12px; font-size: 12px; text-transform: uppercase; }
+        .secao-conteudo p { margin: 10px 0; font-size: 14px; }
     </style>
 </head>
 <body>
 
     <div class="header-dashboard">
-        <h1 style="font-size: 24px; margin: 0;"><i class="fa-solid fa-users" style="color: var(--primary)"></i> Base de Clientes Cadastrados</h1>
-        <button class="btn-tech" style="background:#242F41; color:#fff; border:1px solid var(--border);" onclick="voltarTela()"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
+        <h1 style="font-size: 20px; font-weight: 700;"><i class="fa-solid fa-users" style="color: var(--primary)"></i> Clientes Homologados</h1>
+        <button id="btnVoltarTop" class="btn-tech" style="background: var(--surface); color: var(--text-main); border: 1px solid var(--border); display: none;" onclick="voltarTela()"><i class="fa-solid fa-arrow-left"></i> Voltar</button>
     </div>
 
     <div id="telaLista">
         <div class="search-bar">
-            <input type="text" id="inputBusca" placeholder="Filtrar por nome ou documento de identificação..." oninput="filtrarClientesLocal()">
-            <button class="btn-tech" onclick="carregarClientesDoServidor()"><i class="fa-solid fa-cloud-arrow-down"></i> Sincronizar Banco</button>
+            <input type="text" id="inputBusca" placeholder="Pesquisar por nome ou CPF/CNPJ..." oninput="filtrarClientesLocal()">
+            <button class="btn-tech" onclick="carregarClientesDoServidor()"><i class="fa-solid fa-rotate"></i> Atualizar</button>
         </div>
 
         <table>
             <thead>
                 <tr>
                     <th>Nome / Razão Social</th>
-                    <th>Documento (CPF/CNPJ)</th>
-                    <th style="text-align: right;">Ações de Controle</th>
+                    <th>Documento</th>
+                    <th style="text-align: right;">Ações</th>
                 </tr>
             </thead>
             <tbody id="tabelaClientes">
-                <tr><td colspan="3" style="text-align: center; color: var(--primary);">Consultando servidores REST API...</td></tr>
+                <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Sincronizando registros com o servidor...</td></tr>
             </tbody>
         </table>
     </div>
 
     <div id="telaDetalhes" style="display: none;">
         <div class="card-perfil">
-            <div class="avatar">
-                <i class="fa-solid fa-user-tie" style="font-size:24px; color:var(--primary)"></i>
-            </div>
+            <div class="avatar"><i class="fa-solid fa-user-tie" style="font-size:20px; color:var(--primary)"></i></div>
             <div id="detalheGeral"></div>
         </div>
 
-        <div class="secao-titulo">Canais de Contato e Localidade Física</div>
+        <div class="secao-titulo">Dados de contato e Localização</div>
         <div class="secao-conteudo" id="detalheEndereco"></div>
         
-        <br>
-        <button class="btn-tech" onclick="voltarTela()">Fechar Ficha Corporativa</button>
+        <button class="btn-tech" style="margin-top: 20px;" onclick="voltarTela()">Fechar Ficha</button>
     </div>
 
 <script>
     const API_URL = "https://appdedetizacao.onrender.com";
-    const token = localStorage.getItem("tokenJWT") || localStorage.getItem("token") || localStorage.getItem("token_usuario") || localStorage.getItem("TOKEN_AUTH");
-    const empresaId = localStorage.getItem("empresaId") || localStorage.getItem("usuario_id") || "1";
-    
+    const token = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH");
+    const empresaId = localStorage.getItem("empresaId") || "3"; 
     let clientesGlobais = [];
 
     async function carregarClientesDoServidor() {
-    // 1. Pega o token que foi salvo no login
-    const token = localStorage.getItem('token'); 
+        try {
+            const response = await fetch(`${API_URL}/api/clientes/empresa/${empresaId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                }
+            });
 
-    try {
-        const response = await fetch('https://appdedetizacao.onrender.com/api/clientes/empresa/3', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                // 2. Envia o token no formato Bearer
-                'Authorization': `Bearer ${token}` 
+            if (response.ok) {
+                clientesGlobais = await response.json();
+                renderizarTabela(clientesGlobais);
             }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Status: ${response.status}`);
+        } catch (error) {
+            document.getElementById("tabelaClientes").innerHTML = "<tr><td colspan='3' style='text-align:center; color:#ef4444;'>Erro ao conectar com o servidor.</td></tr>";
         }
-
-        const data = await response.json();
-        console.log(data);
-        // ... sua lógica para renderizar os clientes
-        
-    } catch (error) {
-        console.error("Erro ao carregar clientes:", error);
     }
-}
 
     function renderizarTabela(lista) {
         const tbody = document.getElementById("tabelaClientes");
-        if (!tbody) return;
         tbody.innerHTML = "";
         
-        if (!lista || lista.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='3' style='text-align: center;'>Nenhum cliente indexado para a filial de sua empresa.</td></tr>";
+        if (lista.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='3' style='text-align: center;'>Nenhum cliente vinculado a esta unidade corporativa.</td></tr>";
             return;
         }
         
         lista.forEach(c => {
-            const nome = c.nome || c.nomeCompleto || 'Sem Identificação';
-            const documento = c.cpf || c.cnpj || 'Isento/Não Informado';
             tbody.innerHTML += `
                 <tr>
-                    <td><strong style="color:#fff;">${nome}</strong></td>
-                    <td style="color:var(--text-muted);">${documento}</td>
-                    <td style="text-align: right;"><button class="btn-detalhes" onclick="abrirDetalhes(${c.id})"><i class="fa-solid fa-address-card"></i> Ficha Completa</button></td>
-                </tr>
-            `;
+                    <td><strong>${c.nome || 'Usuário Móvel'}</strong></td>
+                    <td style="color:var(--text-muted);">${c.cnpj || c.cpf || 'Não informado'}</td>
+                    <td style="text-align: right;">
+                        <button class="btn-detalhes" onclick="abrirDetalhes(${c.id})"><i class="fa-solid fa-address-card"></i> Ver Perfil</button>
+                    </td>
+                </tr>`;
         });
     }
 
     function filtrarClientesLocal() {
         const termo = document.getElementById("inputBusca").value.toLowerCase();
         const filtrados = clientesGlobais.filter(c => {
-            const nome = (c.nome || c.nomeCompleto || '').toLowerCase();
-            const doc = (c.cpf || c.cnpj || '').toLowerCase();
-            return nome.includes(termo) || doc.includes(termo);
+            return (c.nome || '').toLowerCase().includes(termo) || (c.cnpj || c.cpf || '').includes(termo);
         });
         renderizarTabela(filtrados);
     }
@@ -173,30 +166,29 @@
         if(!cliente) return;
 
         document.getElementById("detalheGeral").innerHTML = `
-            <h3 style="margin:0 0 5px 0;">${cliente.nome || cliente.nomeCompleto}</h3>
-            <p style="margin:0; font-size:13px; color:var(--text-muted);">ID único de Banco: <span style="color:var(--primary);">#${cliente.id}</span></p>
-        `;
+            <h3 style="font-size:16px; font-weight:700;">${cliente.nome}</h3>
+            <p style="font-size:13px; color:var(--text-muted); margin-top:4px;">Código de Registro: <span style="color:var(--primary); font-weight:700;">#${cliente.id}</span></p>`;
 
         document.getElementById("detalheEndereco").innerHTML = `
-            <p><i class="fa-solid fa-phone" style="color:var(--primary); width:20px;"></i> Telefone Celular: <strong>${cliente.telefone || 'Não registrado'}</strong></p>
-            <p><i class="fa-solid fa-envelope" style="color:var(--primary); width:20px;"></i> E-mail Corporativo: <strong>${cliente.email || 'Não registrado'}</strong></p>
-            <p><i class="fa-solid fa-location-dot" style="color:var(--primary); width:20px;"></i> Endereço Operacional: <strong>${cliente.endereco || cliente.rua || 'Pendente via app'}</strong></p>
-        `;
+            <p><i class="fa-solid fa-phone" style="color:var(--primary); width:20px;"></i> Telefone: <strong>${cliente.telefone || 'Não Informado'}</strong></p>
+            <p><i class="fa-solid fa-envelope" style="color:var(--primary); width:20px;"></i> E-mail: <strong>${cliente.email || 'Não Informado'}</strong></p>
+            <p><i class="fa-solid fa-location-dot" style="color:var(--primary); width:20px;"></i> Endereço Base: <strong>${cliente.endereco || 'Pendente de Sincronização'}</strong></p>`;
 
         document.getElementById("telaLista").style.display = "none";
+        document.getElementById("btnVoltarTop").style.display = "block";
         document.getElementById("telaDetalhes").style.display = "block";
     }
 
     function voltarTela() {
-        if (document.getElementById("telaDetalhes").style.display === "block") {
-            document.getElementById("telaDetalhes").style.display = "none";
-            document.getElementById("telaLista").style.display = "block";
-        } else {
-            window.parent.postMessage('voltarDashboard', '*');
-        }
+        document.getElementById("telaDetalhes").style.display = "none";
+        document.getElementById("btnVoltarTop").style.display = "none";
+        document.getElementById("telaLista").style.display = "block";
     }
 
-    window.onload = carregarClientesDoServidor;
+    window.onload = () => {
+        if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        carregarClientesDoServidor();
+    };
 </script>
 </body>
 </html>

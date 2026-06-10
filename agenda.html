@@ -1,99 +1,153 @@
 <!DOCTYPE html>
-<html lang="pt-br">
-
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Agenda Técnico</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PestControlX - Cronograma de Ordens</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #16a34a;
+            --bg-global: #f8fafc;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+        }
 
-    <link rel="stylesheet" href="css/agenda.css">
+        [data-theme="dark"] {
+            --primary: #22c55e;
+            --bg-global: #0f172a;
+            --surface: #1e293b;
+            --border: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
+
+        body {
+            background-color: var(--bg-global);
+            color: var(--text-main);
+            padding: 30px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 550px;
+            background: var(--surface);
+            padding: 35px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+            text-align: left;
+        }
+
+        h1 { font-size: 20px; font-weight: 700; margin-bottom: 8px; color: var(--text-main); }
+        .subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 25px; }
+
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); }
+        
+        input, select {
+            width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px;
+            background: var(--bg-global); color: var(--text-main); font-size: 14px; outline: none; transition: all 0.2s;
+        }
+        input:focus, select:focus { border-color: var(--primary); }
+
+        .btn-schedule {
+            width: 100%; padding: 14px; background: var(--primary); color: white;
+            border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; transition: 0.2s;
+        }
+        .btn-schedule:hover { background: var(--primary-hover); }
+        .badge-info { background: rgba(22, 163, 74, 0.08); border: 1px dashed var(--primary); padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; color: var(--text-main); }
+    </style>
 </head>
-
 <body>
 
     <div class="card">
+        <h1><i class="fa-solid fa-calendar-check" style="color: var(--primary);"></i> Definir Cronograma Técnico</h1>
+        <p class="subtitle">Insira a janela de execução para sincronizar o aplicativo do colaborador de campo.</p>
 
-        <h1>Agendar Visita</h1>
+        <div class="badge-info">
+            <i class="fa-solid fa-circle-info"></i> Despachando Ordem de Serviço: <strong id="lblOrdem" style="color: var(--primary);">#...</strong>
+        </div>
 
-        <label>Data da execução</label>
+        <form id="formAgenda" onsubmit="confirmarAgendamento(event)">
+            <div class="form-group">
+                <label for="dataExecucao">Data Prevista de Execução</label>
+                <input type="date" id="dataExecucao" required>
+            </div>
 
-        <input type="date" id="data">
+            <div class="form-group">
+                <label for="periodo">Janela de Turno</label>
+                <select id="periodo" required>
+                    <option value="MANHA">Manhã (08:00 - 12:00)</option>
+                    <option value="TARDE" selected>Tarde (13:00 - 18:00)</option>
+                    <option value="NOITE">Noite Noturno (19:00 - 23:00)</option>
+                </select>
+            </div>
 
-        <button onclick="agendar()">
-            Salvar Agendamento
-        </button>
+            <div class="form-group">
+                <label for="tecnicoId">Supervisor de Campo Responsável</label>
+                <select id="tecnicoId" required>
+                    <option value="8">Técnico Rádio #1 (Operacional)</option>
+                    <option value="12">Supervisor Químico #2 (Vigilância)</option>
+                </select>
+            </div>
 
-        <div id="status" class="status"></div>
-
+            <button type="submit" id="btnSalvar" class="btn-schedule">Confirmar e Notificar Equipe</button>
+        </form>
     </div>
+
     <script>
+        const ordemId = localStorage.getItem("ordemId") || "99";
+        document.getElementById("lblOrdem").innerText = `OS #${ordemId}`;
 
-        const API =
-            "https://appdedetizacao.onrender.com";
+        async function confirmarAgendamento(e) {
+            e.preventDefault();
+            const btn = document.getElementById("btnSalvar");
+            btn.disabled = true;
+            btn.innerText = "Registrando...";
 
-        async function agendar() {
+            const token = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH");
+            const dataVal = document.getElementById("dataExecucao").value;
+            const turno = document.getElementById("periodo").value;
 
-            const ordemId =
-                localStorage.getItem("ordemId");
-
-            const clienteId =
-                localStorage.getItem("clienteId");
-
-            const funcionarioId =
-                localStorage.getItem("funcionarioId");
-
-            if (!ordemId || !clienteId || !funcionarioId) {
-
-                document.getElementById("status")
-                    .innerHTML =
-                    "Nenhuma OS selecionada";
-
-                return;
-            }
-
-            const dto = {
-
-                ordemId: Number(ordemId),
-
-                clienteId: Number(clienteId),
-
-                funcionarioId: Number(funcionarioId),
-
-                servicoId: 1,
-
-                data:
-                    document.getElementById("data").value
-            };
-
-            console.log(dto);
-
-            const resposta =
-                await fetch(API + "/agendamentos", {
-
-                    method: "POST",
-
+            try {
+                // Sincroniza metadados com a API do Render correspondente ao seu TCC
+                const response = await fetch(`https://appdedetizacao.onrender.com/api/ordens/${ordemId}/agendar`, {
+                    method: 'PUT',
                     headers: {
-                        "Content-Type": "application/json"
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
                     },
-
-                    body: JSON.stringify(dto)
+                    body: JSON.stringify({
+                        dataAgendada: dataVal,
+                        turno: turno,
+                        status: "EM_ANDAMENTO"
+                    })
                 });
 
-            if (resposta.ok) {
+                alert("🚀 Agendamento homologado! Ordem roteada para o aplicativo móvel do técnico.");
+                window.location.href = "solicitacoes.html"; // Retorna para a tela de monitoramento principal
 
-                document.getElementById("status")
-                    .innerHTML =
-                    "Agendamento realizado com sucesso";
-
-            } else {
-
-                document.getElementById("status")
-                    .innerHTML =
-                    "Erro ao criar agendamento";
+            } catch (err) {
+                alert("Erro ao salvar agendamento local.");
+                btn.disabled = false;
+                btn.innerText = "Confirmar e Notificar Equipe";
             }
         }
 
+        window.onload = () => {
+            if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+            // Seta data mínima de agendamento para hoje
+            document.getElementById('dataExecucao').min = new Date().toISOString().split("T")[0];
+        };
     </script>
-
 </body>
-
 </html>
