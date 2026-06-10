@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestão de Equipe</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #334155;
+            --border-color: #e2e8f0;
+            --primary: #16a34a;
+        }
+        body.dark-theme {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --border-color: #334155;
+        }
+        body { font-family: system-ui, sans-serif; background: var(--bg-color); color: var(--text-main); padding: 20px; transition: all 0.3s; }
+        .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn-add { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        th { background: rgba(0,0,0,0.02); font-weight: 600; }
+        .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .status-ativo { background: #dcfce7; color: #166534; }
+        .status-campo { background: #fef08a; color: #854d0e; }
+        .status-inativo { background: #fee2e2; color: #991b1b; }
+        .actions-btn { background: transparent; border: none; color: #64748b; cursor: pointer; margin-right: 10px; }
+        .actions-btn:hover { color: var(--primary); }
+    </style>
+</head>
+<body>
+
+    <div class="header-actions">
+        <h2>Técnicos e Operadores</h2>
+        <button class="btn-add"><i class="fa-solid fa-plus"></i> Novo Técnico</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Especialidade</th>
+                <th>Contato</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody id="tabela-equipe">
+            </tbody>
+    </table>
+
+    <script>
+        // Escuta mudança de tema vinda do iframe pai
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.tipo === 'sincronizarTema') {
+                document.body.className = event.data.tema === 'dark' ? 'dark-theme' : '';
+            }
+        });
+
+        // Mock de dados
+        const equipe = [
+            { id: 1, nome: "Carlos Silva", espec: "Roedores / Escorpiões", tel: "(11) 98888-7777", status: "campo" },
+            { id: 2, nome: "Ana Souza", espec: "Insetos Voadores", tel: "(11) 97777-6666", status: "ativo" },
+            { id: 3, nome: "Marcos Paulo", espec: "Limpeza de Reservatórios", tel: "(11) 95555-4444", status: "inativo" }
+        ];
+
+        function renderizarEquipe() {
+            const tbody = document.getElementById("tabela-equipe");
+            tbody.innerHTML = "";
+            equipe.forEach(tec => {
+                let statusClass = tec.status === 'ativo' ? 'status-ativo' : tec.status === 'campo' ? 'status-campo' : 'status-inativo';
+                let statusText = tec.status === 'ativo' ? 'Disponível' : tec.status === 'campo' ? 'Em Rota' : 'Inativo / Férias';
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${tec.nome}</strong></td>
+                        <td>${tec.espec}</td>
+                        <td>${tec.tel}</td>
+                        <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td>
+                            <button class="actions-btn" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                            <button class="actions-btn" title="Bloquear Acesso"><i class="fa-solid fa-ban"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        renderizarEquipe();
+    </script>
+</body>
+</html>

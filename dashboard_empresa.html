@@ -255,6 +255,10 @@
                 <button id="passo-2-monitoramento" class="nav-btn active" onclick="navegar(this, 'solicitacoes.html')">
                     <i class="fa-solid fa-chart-line"></i> <span>Monitoramento</span>
                 </button>
+
+                <button class="nav-btn" onclick="navegar(this, 'equipe.html')">
+                <i class="fa-solid fa-user-shield"></i> <span>Gestão de Equipe</span>
+                </button>
                 <button class="nav-btn" onclick="navegar(this, 'clientes.html')">
                     <i class="fa-solid fa-users"></i> <span>Clientes</span>
                 </button>
@@ -292,12 +296,13 @@
                 this.isActive = localStorage.getItem('pestbot_status') !== 'disabled';
                 // Mapeamento dos módulos vinculados à ordem real dos seus botões na Sidebar
                 this.modulos = [
-                    { num: 1, nome: "Monitoramento", file: "solicitacoes.html" },
-                    { num: 2, nome: "Clientes", file: "clientes.html" },
-                    { num: 3, nome: "Chat ao Vivo", file: "chat.html" },
-                    { num: 4, nome: "Sobre a Empresa", file: "sobre.html" },
-                    { num: 5, nome: "Configurações do Terminal", file: "configuracoestela.html" }
-                ];
+    { num: 1, nome: "Monitoramento", file: "solicitacoes.html" },
+    { num: 2, nome: "Gestão de Equipe", file: "equipe.html" }, // <-- ADICIONADO AQUI
+    { num: 3, nome: "Clientes", file: "clientes.html" },
+    { num: 4, nome: "Chat ao Vivo", file: "chat.html" },
+    { num: 5, nome: "Sobre a Empresa", file: "sobre.html" },
+    { num: 6, nome: "Configurações do Terminal", file: "configuracoestela.html" }
+];
                 this.init();
             }
 
