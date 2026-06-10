@@ -14,87 +14,153 @@
             --brand-green-hover: #15803d;
             --border-light: #e2e8f0;
             --input-focus: #bbf7d0;
+            --step-inactive: #cbd5e1;
         }
+
+        /* 🌙 Sincronização Perfeita com o Modo Escuro */
+        [data-theme="dark"] {
+            --bg-global: #0f172a;
+            --card-bg: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --brand-green: #22c55e;
+            --brand-green-hover: #16a34a;
+            --border-light: #334155;
+            --input-focus: #14532d;
+            --step-inactive: #475569;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
         body {
             background-color: var(--bg-global);
             color: var(--text-primary);
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            margin: 0;
-            padding: 20px 0;
+            padding: 40px 20px;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
-        .brand-container {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-        .brand-container .logo-img {
-            max-height: 85px;
-            margin-bottom: 10px;
-        }
-        .brand-container .app-name-img {
-            display: block;
-            max-height: 24px;
-            margin: 0 auto;
-        }
+
         .glass-card {
             background-color: var(--card-bg);
             border: 1px solid var(--border-light);
             border-radius: 16px;
-            padding: 40px;
+            padding: 45px 40px;
             width: 100%;
             max-width: 500px;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
             box-sizing: border-box;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
+
+        /* 🎯 Header unificado dentro do Card */
+        .brand-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .brand-header .logo-img {
+            max-height: 75px;
+            margin-bottom: 12px;
+        }
+
+        .brand-header h1 {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .brand-header p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 6px;
+        }
+
+        /* 📋 Rastreador de Passos Progressivo (UX Avançada) */
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .step-pill {
+            flex: 1;
+            height: 4px;
+            background-color: var(--step-inactive);
+            border-radius: 2px;
+            transition: background-color 0.3s ease;
+        }
+
+        .step-pill.active {
+            background-color: var(--brand-green);
+        }
+
         .form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 16px;
             margin-bottom: 20px;
         }
+
         .input-group {
             display: flex;
             flex-direction: column;
             text-align: left;
         }
+
         .input-group.full {
             grid-column: span 2;
         }
+
         .input-group label {
             font-size: 13px;
             font-weight: 600;
             color: var(--text-primary);
             margin-bottom: 8px;
         }
-        .input-group input, .select-wrapper select {
+
+        .input-group input, select {
             width: 100%;
-            padding: 12px 14px;
+            padding: 13px 16px;
             border: 1px solid var(--border-light);
             border-radius: 10px;
-            background-color: #fff;
+            background-color: var(--card-bg);
             color: var(--text-primary);
             font-size: 14px;
             box-sizing: border-box;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
         }
-        .input-group input:focus, .select-wrapper select:focus {
+
+        .input-group input:focus, select:focus {
             outline: none;
             border-color: var(--brand-green);
             box-shadow: 0 0 0 3px var(--input-focus);
         }
-        .select-wrapper {
-            margin-bottom: 20px;
-        }
+
         .step {
             display: none;
         }
+
         .step.active {
             display: block;
+            animation: fadeIn 0.3s ease-out;
         }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .btn-primary {
             width: 100%;
             padding: 14px;
@@ -105,16 +171,28 @@
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             transition: background-color 0.2s ease;
         }
+
         .btn-primary:hover {
             background-color: var(--brand-green-hover);
         }
+
+        .btn-primary:disabled {
+            background-color: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
         .actions-footer {
             display: flex;
             gap: 12px;
             margin-top: 20px;
         }
+
         .btn-ghost {
             width: 35%;
             padding: 14px;
@@ -127,55 +205,78 @@
             cursor: pointer;
             transition: all 0.2s;
         }
+
         .btn-ghost:hover {
             background-color: #f1f5f9;
             color: var(--text-primary);
         }
+
+        [data-theme="dark"] .btn-ghost:hover {
+            background-color: #334155;
+        }
+
+        .alert-box {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            display: none;
+            text-align: left;
+        }
+
+        .alert-error { background-color: #fef2f2; border: 1px solid #fee2e2; color: #991b1b; }
+        .alert-success { background-color: #f0fdf4; border: 1px solid #dcfce7; color: #166434; }
     </style>
 </head>
 <body>
 
-    <div class="brand-container">
-        <div class="logo-wrapper">
-            <img src="img/logo2 copy.png" alt="Logo" class="logo-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2942/2942780.png'">
-        </div>
-        <img src="img/nomeapp copy.png" alt="PestControlX" class="app-name-img" onerror="this.style.display='none'">
-    </div>
-
     <div class="glass-card">
-        <div class="input-group full">
-            <label for="tipo">Tipo de Perfil Requerido</label>
-            <div class="select-wrapper">
-                <select id="tipo" onchange="toggleCnpjField()">
-                    <option value="" disabled selected>Selecione o nível de acesso</option>
-                    <option value="EMPRESA">Empresa (Painel de Gestão)</option>
-                    <option value="FUNCIONARIO">Técnico / Suporte Corporativo</option>
-                </select>
-            </div>
+        <div class="brand-header">
+            <img src="img/logo2 copy.png" alt="Logo" class="logo-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2942/2942780.png'">
+            <h1>Portal de Registro</h1>
+            <p>Crie suas credenciais operacionais de acesso</p>
+        </div>
+
+        <div class="step-indicator">
+            <div id="pill1" class="step-pill active"></div>
+            <div id="pill2" class="step-pill"></div>
         </div>
 
         <form id="registerForm">
             <div id="step1" class="step active">
                 <div class="form-grid">
                     <div class="input-group full">
+                        <label for="tipo">Tipo de Perfil Requerido</label>
+                        <select id="tipo" onchange="toggleCnpjField()" required>
+                            <option value="" disabled selected>Selecione o nível de acesso</option>
+                            <option value="EMPRESA">Empresa (Painel de Gestão)</option>
+                            <option value="FUNCIONARIO">Técnico / Suporte Corporativo</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group full">
                         <label for="nome">Nome Completo / Razão Social</label>
                         <input type="text" id="nome" placeholder="Digite seu nome ou da empresa" required>
                     </div>
+
                     <div class="input-group">
                         <label for="cep">CEP</label>
-                        <input type="text" id="cep" placeholder="00000-000">
+                        <input type="text" id="cep" placeholder="00000-000" maxlength="9" required>
                     </div>
+
                     <div class="input-group">
                         <label for="numero">Número</label>
-                        <input type="text" id="numero" placeholder="Ex: 123">
+                        <input type="text" id="numero" placeholder="Ex: 123" required>
                     </div>
+
                     <div class="input-group full">
                         <label for="rua">Rua / Logradouro</label>
-                        <input type="text" id="rua" placeholder="Rua...">
+                        <input type="text" id="rua" placeholder="Aguardando CEP..." required>
                     </div>
+
                     <div class="input-group full">
                         <label for="bairro">Bairro</label>
-                        <input type="text" id="bairro" placeholder="Bairro">
+                        <input type="text" id="bairro" placeholder="Aguardando CEP..." required>
                     </div>
                 </div>
                 <button type="button" class="btn-primary" onclick="nextStep()">Próximo Passo →</button>
@@ -187,15 +288,20 @@
                         <label for="email">E-mail Corporativo</label>
                         <input type="email" id="email" placeholder="nome@empresa.com" required>
                     </div>
+
                     <div class="input-group full">
                         <label for="senha">Senha de Acesso</label>
-                        <input type="password" id="senha" placeholder="Mínimo 8 caracteres" required>
+                        <input type="password" id="senha" placeholder="Mínimo 8 caracteres" minlength="8" required>
                     </div>
+
                     <div class="input-group full" id="cnpjGroup" style="display:none;">
                         <label for="cnpj" id="lblCnpj">CNPJ da Unidade</label>
-                        <input type="text" id="cnpj" placeholder="00.000.000/0001-00">
+                        <input type="text" id="cnpj" placeholder="00.000.000/0001-00" maxlength="18">
                     </div>
                 </div>
+
+                <div id="alertBox" class="alert-box"></div>
+
                 <div class="actions-footer">
                     <button type="button" class="btn-ghost" onclick="prevStep()">Voltar</button>
                     <button type="submit" id="btnSubmit" class="btn-primary" style="flex: 1;">Finalizar Cadastro</button>
@@ -205,22 +311,41 @@
     </div>
 
     <script>
+        // 🌒 Leitura e sincronização automática de tema com as páginas anteriores
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+
+        const alertBox = document.getElementById("alertBox");
+
+        function exibirAlerta(mensagem, tipo = 'error') {
+            alertBox.className = `alert-box alert-${tipo}`;
+            alertBox.textContent = mensaje || mensagem;
+            alertBox.style.display = "block";
+        }
+
+        // 📊 Navegação Limpa entre Passos
         function nextStep() {
             const tipo = document.getElementById('tipo').value;
             const nome = document.getElementById('nome').value;
+            const cep = document.getElementById('cep').value;
+            const numero = document.getElementById('numero').value;
             
-            if (!tipo || !nome) {
-                alert("Por favor, selecione o tipo de perfil e preencha seu nome!");
+            if (!tipo || !nome || !cep || !numero) {
+                alert("Por favor, preencha todos os campos obrigatórios da primeira etapa!");
                 return;
             }
             
             document.getElementById('step1').classList.remove('active');
             document.getElementById('step2').classList.add('active');
+            document.getElementById('pill2').classList.add('active');
         }
 
         function prevStep() {
             document.getElementById('step2').classList.remove('active');
+            document.getElementById('pill2').classList.remove('active');
             document.getElementById('step1').classList.add('active');
+            alertBox.style.display = "none";
         }
 
         function toggleCnpjField() {
@@ -229,21 +354,43 @@
             const lblCnpj = document.getElementById('lblCnpj');
             const inputCnpj = document.getElementById('cnpj');
             
+            inputCnpj.value = ""; // Limpa máscara anterior
+            
             if (tipo === 'EMPRESA') {
                 cnpjGroup.style.display = 'block';
-                lblCnpj.innerText = "CNPJ da Empresa (Apenas Números)";
-                inputCnpj.placeholder = "Ex: 12345678000199";
+                lblCnpj.innerText = "CNPJ da Empresa";
+                inputCnpj.placeholder = "00.000.000/0001-00";
             } else if (tipo === 'FUNCIONARIO') {
-                // Técnicos precisam do ID da empresa para se vincular no Java
                 cnpjGroup.style.display = 'block';
-                lblCnpj.innerText = "ID da Empresa Contratante (Para Vínculo)";
+                lblCnpj.innerText = "ID da Empresa Contratante (Vínculo)";
                 inputCnpj.placeholder = "Ex: 42";
             } else {
                 cnpjGroup.style.display = 'none';
             }
         }
 
-        // JS ENCAPSULADO E BLINDADO CONTRA CRASHES
+        // 🛡️ Máscaras de Digitação Inteligentes
+        document.getElementById("cep").addEventListener("input", function (e) {
+            let x = e.target.value.replace(/\D/g, '').match(/(\d{0,5})(\d{0,3})/);
+            e.target.value = !x[2] ? x[1] : x[1] + '-' + x[2];
+        });
+
+        document.getElementById("cnpj").addEventListener("input", function (e) {
+            const tipo = document.getElementById('tipo').value;
+            if (tipo === 'FUNCIONARIO') {
+                e.target.value = e.target.value.replace(/\D/g, ''); // Permite só ID numérico
+                return;
+            }
+            let v = e.target.value.replace(/\D/g, "");
+            if (v.length > 14) v = v.substring(0, 14);
+            if (v.length > 12) v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
+            else if (v.length > 8) v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{0,4})/, "$1.$2.$3/$4");
+            else if (v.length > 5) v = v.replace(/^(\d{2})(\d{3})(\d{0,3})/, "$1.$2.$3");
+            else if (v.length > 2) v = v.replace(/^(\d{2})(\d{0,3})/, "$1.$2");
+            e.target.value = v;
+        });
+
+        // 📡 Tratamento Assíncrono do CEP e Envio de Dados do Formulário
         document.addEventListener("DOMContentLoaded", () => {
             const form = document.getElementById("registerForm");
             const cepInput = document.getElementById("cep");
@@ -253,12 +400,13 @@
             
             const BASE_URL = "https://appdedetizacao.onrender.com";
 
-            // Busca CEP
+            // Integração ViaCEP
             cepInput.addEventListener("blur", () => {
                 let cep = cepInput.value.replace(/\D/g, '');
                 if (cep.length === 8) {
-                    ruaInput.value = "Buscando...";
-                    bairroInput.value = "Buscando...";
+                    ruaInput.value = "Buscando logradouro...";
+                    bairroInput.value = "Buscando bairro...";
+                    
                     fetch(`https://viacep.com.br/ws/${cep}/json/`)
                         .then(res => res.json())
                         .then(dados => {
@@ -269,19 +417,19 @@
                             } else {
                                 ruaInput.value = "";
                                 bairroInput.value = "";
-                                alert("CEP não encontrado.");
+                                alert("CEP informado não foi localizado na base de dados.");
                             }
-                        }).catch(() => alert("Erro ao buscar CEP."));
+                        }).catch(() => alert("Falha na requisição externa de busca postal."));
                 }
             });
 
-            // Envio do formulário
+            // Post de Cadastro
             form.addEventListener("submit", async (e) => {
-                e.preventDefault();
+                e.preventDefault(); 
+                alertBox.style.display = "none";
                 btnSubmit.disabled = true;
-                btnSubmit.innerText = "Processando...";
+                btnSubmit.innerText = "Cadastrando Unidade...";
 
-                // 🔥 CORREÇÃO 2: Limpando a pontuação do CNPJ/ID para não dar erro no Long.valueOf do Java
                 let rawCnpj = document.getElementById("cnpj").value.replace(/\D/g, '');
                 if(rawCnpj === "") rawCnpj = "0";
 
@@ -289,12 +437,12 @@
                     nome: document.getElementById("nome").value,
                     email: document.getElementById("email").value,
                     senha: document.getElementById("senha").value,
-                    tipo: document.getElementById("tipo").value, 
+                    tipo: document.getElementById("tipo").value,
                     cep: cepInput.value,
                     rua: ruaInput.value,
                     bairro: bairroInput.value,
                     numero: document.getElementById("numero").value,
-                    cnpj: rawCnpj 
+                    cnpj: rawCnpj
                 };
 
                 try {
@@ -304,22 +452,22 @@
                         body: JSON.stringify(body)
                     });
 
-                    // 🔥 CORREÇÃO 3: Tratamento de erro que não quebra se o Java devolver HTML
                     if (!response.ok) {
-                        let errorMsg = `Erro no Servidor (${response.status}).`;
+                        let errorMsg = `Erro na API (${response.status}).`;
                         try {
                             const errorData = await response.json();
                             if(errorData && errorData.message) errorMsg = errorData.message;
-                        } catch (jsonErr) {
-                            console.error("Servidor retornou erro não-JSON:", response.statusText);
-                        }
+                        } catch (e) {}
                         throw new Error(errorMsg);
                     }
 
-                    alert("🚀 Cadastro realizado com sucesso! Você já pode fazer login.");
-                    window.location.href = "index.html"; // Joga pra tela de login
+                    exibirAlerta("Cadastro validado com sucesso! Redirecionando...", "success");
+                    setTimeout(() => {
+                        window.location.href = "index.html"; 
+                    }, 1500);
+
                 } catch (err) {
-                    alert("Falha no cadastro: " + err.message);
+                    exibirAlerta(err.message, "error");
                     btnSubmit.disabled = false;
                     btnSubmit.innerText = "Finalizar Cadastro";
                 }
