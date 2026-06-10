@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Gestão de Equipe</title>
+    <title>Gestão de Equipe - PestControlX</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -11,32 +11,104 @@
             --text-main: #334155;
             --border-color: #e2e8f0;
             --primary: #16a34a;
+            --primary-hover: #15803d;
+            --danger: #ef4444;
+            --overlay: rgba(15, 23, 42, 0.4);
         }
         body.dark-theme {
             --bg-color: #0f172a;
             --card-bg: #1e293b;
             --text-main: #f8fafc;
             --border-color: #334155;
+            --overlay: rgba(0, 0, 0, 0.6);
         }
-        body { font-family: system-ui, sans-serif; background: var(--bg-color); color: var(--text-main); padding: 20px; transition: all 0.3s; }
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            background: var(--bg-color); 
+            color: var(--text-main); 
+            padding: 20px; 
+            transition: background 0.3s, color 0.3s; 
+            margin: 0;
+        }
         .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .btn-add { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .header-actions h2 { margin: 0; font-size: 1.5rem; }
+        
+        .btn-add { 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+        .btn-add:hover { background: var(--primary-hover); }
+        
         table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         th, td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
-        th { background: rgba(0,0,0,0.02); font-weight: 600; }
-        .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        th { background: rgba(0,0,0,0.02); font-weight: 600; color: var(--text-main); opacity: 0.8; }
+        
+        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; display: inline-block; }
         .status-ativo { background: #dcfce7; color: #166534; }
         .status-campo { background: #fef08a; color: #854d0e; }
         .status-inativo { background: #fee2e2; color: #991b1b; }
-        .actions-btn { background: transparent; border: none; color: #64748b; cursor: pointer; margin-right: 10px; }
+        
+        .actions-btn { background: transparent; border: none; color: #64748b; cursor: pointer; margin-right: 10px; font-size: 1rem; transition: color 0.2s; }
         .actions-btn:hover { color: var(--primary); }
+        .actions-btn.btn-del:hover { color: var(--danger); }
+
+        /* --- MODAL DA ARQUITETURA DE CADASTRO REAL --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--overlay);
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.2s ease;
+            z-index: 1000;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        
+        .modal-container {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 12px;
+            width: 100%; max-width: 400px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15);
+            border: 1px solid var(--border-color);
+            transform: scale(0.95); transition: transform 0.2s ease;
+        }
+        .modal-overlay.active .modal-container { transform: scale(1); }
+        
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-header h3 { margin: 0; font-size: 1.2rem; }
+        .modal-close { background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 1.2rem; }
+        
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+        .form-input { 
+            width: 100%; padding: 10px; 
+            border-radius: 6px; border: 1px solid var(--border-color); 
+            background: var(--bg-color); color: var(--text-main); 
+            box-sizing: border-box; font-size: 14px;
+        }
+        .form-input:focus { outline: none; border-color: var(--primary); }
+        
+        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+        .btn-cancel { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .btn-save { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .btn-save:hover { background: var(--primary-hover); }
     </style>
 </head>
 <body>
 
     <div class="header-actions">
         <h2>Técnicos e Operadores</h2>
-        <button class="btn-add"><i class="fa-solid fa-plus"></i> Novo Técnico</button>
+        <button class="btn-add" onclick="abrirModal()"><i class="fa-solid fa-plus"></i> Novo Técnico</button>
     </div>
 
     <table>
@@ -53,24 +125,67 @@
             </tbody>
     </table>
 
+    <div class="modal-overlay" id="modalTecnico">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="modal-titulo">Cadastrar Novo Operador</h3>
+                <button class="modal-close" onclick="fecharModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-tecnico" onsubmit="salvarTecnico(event)">
+                <input type="hidden" id="tec-id">
+                <div class="form-group">
+                    <label for="tec-nome">Nome Completo</label>
+                    <input type="text" id="tec-nome" class="form-input" required placeholder="Ex: Carlos Silva">
+                </div>
+                <div class="form-group">
+                    <label for="tec-espec">Especialidade / Foco</label>
+                    <input type="text" id="tec-espec" class="form-input" required placeholder="Ex: Roedores e Escorpiões">
+                </div>
+                <div class="form-group">
+                    <label for="tec-tel">Telefone de Contato</label>
+                    <input type="text" id="tec-tel" class="form-input" required placeholder="Ex: (11) 99999-8888">
+                </div>
+                <div class="form-group">
+                    <label for="tec-status">Status Operacional</label>
+                    <select id="tec-status" class="form-input" required>
+                        <option value="ativo">Disponível (Base)</option>
+                        <option value="campo">Em Rota (Campo)</option>
+                        <option value="inativo">Inativo / Férias</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" onclick="fecharModal()">Cancelar</button>
+                    <button type="submit" class="btn-save">Salvar Integrante</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
-        // Escuta mudança de tema vinda do iframe pai
+        // Sincronização Automática com o barramento do Painel Pai (Light/Dark Mode)
         window.addEventListener('message', (event) => {
             if (event.data && event.data.tipo === 'sincronizarTema') {
                 document.body.className = event.data.tema === 'dark' ? 'dark-theme' : '';
             }
         });
 
-        // Mock de dados
-        const equipe = [
+        // Banco de Dados em Memória Real (Inicia com os seus mocks de TCC)
+        let equipe = [
             { id: 1, nome: "Carlos Silva", espec: "Roedores / Escorpiões", tel: "(11) 98888-7777", status: "campo" },
             { id: 2, nome: "Ana Souza", espec: "Insetos Voadores", tel: "(11) 97777-6666", status: "ativo" },
             { id: 3, nome: "Marcos Paulo", espec: "Limpeza de Reservatórios", tel: "(11) 95555-4444", status: "inativo" }
         ];
 
+        // Renderizador da Tabela Dinâmica
         function renderizarEquipe() {
             const tbody = document.getElementById("tabela-equipe");
             tbody.innerHTML = "";
+
+            if(equipe.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#64748b; padding:30px;">Nenhum técnico registrado na base da empresa.</td></tr>`;
+                return;
+            }
+
             equipe.forEach(tec => {
                 let statusClass = tec.status === 'ativo' ? 'status-ativo' : tec.status === 'campo' ? 'status-campo' : 'status-inativo';
                 let statusText = tec.status === 'ativo' ? 'Disponível' : tec.status === 'campo' ? 'Em Rota' : 'Inativo / Férias';
@@ -82,13 +197,74 @@
                         <td>${tec.tel}</td>
                         <td><span class="status-badge ${statusClass}">${statusText}</span></td>
                         <td>
-                            <button class="actions-btn" title="Editar"><i class="fa-solid fa-pen"></i></button>
-                            <button class="actions-btn" title="Bloquear Acesso"><i class="fa-solid fa-ban"></i></button>
+                            <button class="actions-btn" onclick="editarTecnico(${tec.id})" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                            <button class="actions-btn btn-del" onclick="deletarTecnico(${tec.id})" title="Excluir"><i class="fa-solid fa-trash-can"></i></button>
                         </td>
                     </tr>
                 `;
             });
         }
+
+        // Funções de Controle do Modal
+        function abrirModal() {
+            document.getElementById('form-tecnico').reset();
+            document.getElementById('tec-id').value = '';
+            document.getElementById('modal-titulo').innerText = "Cadastrar Novo Operador";
+            document.getElementById('modalTecnico').classList.add('active');
+        }
+
+        function fecharModal() {
+            document.getElementById('modalTecnico').classList.remove('active');
+        }
+
+        // CRUD - Criar e Editar Real no Front
+        function salvarTecnico(event) {
+            event.preventDefault();
+
+            const id = document.getElementById('tec-id').value;
+            const nome = document.getElementById('tec-nome').value;
+            const espec = document.getElementById('tec-espec').value;
+            const tel = document.getElementById('tec-tel').value;
+            const status = document.getElementById('tec-status').value;
+
+            if (id) {
+                // Modo Edição: Altera os dados do técnico existente
+                const index = equipe.findIndex(t => t.id == id);
+                if (index !== -1) {
+                    equipe[index] = { id: parseInt(id), nome, espec, tel, status };
+                }
+            } else {
+                // Modo Criação: Adiciona um elemento real na array
+                const novoId = equipe.length > 0 ? Math.max(...equipe.map(t => t.id)) + 1 : 1;
+                equipe.push({ id: novoId, nome, espec, tel, status });
+            }
+
+            fecharModal();
+            renderizarEquipe();
+        }
+
+        function editarTecnico(id) {
+            const tec = equipe.find(t => t.id === id);
+            if (!tec) return;
+
+            document.getElementById('tec-id').value = tec.id;
+            document.getElementById('tec-nome').value = tec.nome;
+            document.getElementById('tec-espec').value = tec.espec;
+            document.getElementById('tec-tel').value = tec.tel;
+            document.getElementById('tec-status').value = tec.status;
+
+            document.getElementById('modal-titulo').innerText = "Editar Credenciais";
+            document.getElementById('modalTecnico').classList.add('active');
+        }
+
+        function deletarTecnico(id) {
+            if(confirm("Deseja realmente remover este técnico do sistema? Elas perderá o acesso ao app.")) {
+                equipe = equipe.filter(t => t.id !== id);
+                renderizarEquipe();
+            }
+        }
+
+        // Execução primária ao renderizar a tela interna
         renderizarEquipe();
     </script>
 </body>
