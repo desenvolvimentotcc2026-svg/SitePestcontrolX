@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css"> 
     
-    <!-- 🤖 SUITE DE ESTILOS AVANÇADOS PESTBOT CORE -->
     <style>
         #pestbot-widget {
             position: fixed;
@@ -220,7 +219,6 @@
             </h1>
         </div>
         <div class="topbar-right">
-            <!-- Botão de Ativação Rápida Superior -->
             <button id="btn-ligar-bot" class="btn-ativar-bot" onclick="pestBot.toggleBot(true)">
                 <i class="fa-solid fa-robot"></i> Chamar PestBot
             </button>
@@ -239,7 +237,7 @@
             <div class="profile-area">
                 <div class="profile-pic-container" id="passo-1-perfil">
                     <img id="imgPfpSidebar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364748b'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>">
-                    <label class="change-pic-btn" for="filePfpInput" title="Atualizar Foto de Perfil">
+                    <label class="change-pic-btn" for="filePfpInput" title="Atualizar Foto de Perfil" onclick="if(window.pestBot) pestBot.limparHighlightsGerais();">
                         <i class="fa-solid fa-camera"></i>
                     </label>
                 </div>
@@ -257,7 +255,7 @@
                 </button>
 
                 <button class="nav-btn" onclick="navegar(this, 'equipe.html')">
-                <i class="fa-solid fa-user-shield"></i> <span>Gestão de Equipe</span>
+                    <i class="fa-solid fa-user-shield"></i> <span>Gestão de Equipe</span>
                 </button>
                 <button class="nav-btn" onclick="navegar(this, 'clientes.html')">
                     <i class="fa-solid fa-users"></i> <span>Clientes</span>
@@ -283,7 +281,6 @@
         </main>
     </div>
 
-    <!-- 🤖 ARQUITETURA COGNITIVA INTERATIVA DO PESTBOT -->
     <script>
         const verificarSePerfilEstaCompleto = () => {
             const empresaId = localStorage.getItem("empresaId") || "1";
@@ -294,16 +291,28 @@
         class PestBotManager {
             constructor() {
                 this.isActive = localStorage.getItem('pestbot_status') !== 'disabled';
-                // Mapeamento dos módulos vinculados à ordem real dos seus botões na Sidebar
                 this.modulos = [
-    { num: 1, nome: "Monitoramento", file: "solicitacoes.html" },
-    { num: 2, nome: "Gestão de Equipe", file: "equipe.html" }, // <-- ADICIONADO AQUI
-    { num: 3, nome: "Clientes", file: "clientes.html" },
-    { num: 4, nome: "Chat ao Vivo", file: "chat.html" },
-    { num: 5, nome: "Sobre a Empresa", file: "sobre.html" },
-    { num: 6, nome: "Configurações do Terminal", file: "configuracoestela.html" }
-];
+                    { num: 1, nome: "Monitoramento", file: "solicitacoes.html" },
+                    { num: 2, nome: "Gestão de Equipe", file: "equipe.html" },
+                    { num: 3, nome: "Clientes", file: "clientes.html" },
+                    { num: 4, nome: "Chat ao Vivo", file: "chat.html" },
+                    { num: 5, nome: "Sobre a Empresa", file: "sobre.html" },
+                    { num: 6, nome: "Configurações do Terminal", file: "configuracoestela.html" }
+                ];
                 this.init();
+            }
+
+            // Captura dinâmica do e-mail do usuário para criar chaves exclusivas no LocalStorage
+            obterChaveTutorialUsuario() {
+                // Tenta ler do elemento HTML renderizado pelo seu backend/js de autenticação
+                const emailEl = document.getElementById('userEmail');
+                const emailTxt = emailEl ? emailEl.innerText.trim().toLowerCase() : "";
+                
+                // Fallback caso ainda não tenha carregado o texto na tela
+                if (!emailTxt || emailTxt.includes("autenticando")) {
+                    return "pestbot_tutorial_completo_anonimo";
+                }
+                return `pestbot_tutorial_completo_${btoa(emailTxt)}`; // Gera hash simples e seguro base64
             }
 
             init() {
@@ -317,9 +326,10 @@
                 if(btnLigar) btnLigar.style.display = 'none';
                 this.renderBotUI();
                 
+                // Pequeno delay para garantir que os dados do usuário (e-mail) já carregaram na tela
                 setTimeout(() => {
                     this.avaliarEstadoDoUsuario();
-                }, 800);
+                }, 1000);
             }
 
             renderBotUI() {
@@ -353,10 +363,11 @@
             }
 
             avaliarEstadoDoUsuario() {
-                const tutorialFeito = localStorage.getItem('pestbot_tutorial_completo');
+                const chaveLocalStorage = this.obterChaveTutorialUsuario();
+                const tutorialFeito = localStorage.getItem(chaveLocalStorage);
                 const perfilCompleto = verificarSePerfilEstaCompleto();
 
-                if (!tutorialFeito) {
+                if (!tutorialFeito || tutorialFeito !== 'true') {
                     this.iniciarTourGuiado();
                 } else if (!perfilCompleto) {
                     this.solicitarPreenchimentoPerfilProativo();
@@ -365,8 +376,8 @@
                 }
             }
 
-            // Mapeador de exibição estruturada do Menu Principal
             imprimirMenuPrincipal(mensagemInicial) {
+                this.limparHighlightsGerais(); // Garante o fim de qualquer tela escura residual
                 const txtContainer = document.getElementById('pestbot-text-container');
                 let htmlMenu = `<p>${mensagemInicial}</p><ul class="pestbot-menu-list">`;
                 
@@ -386,24 +397,21 @@
                 txtContainer.innerHTML = htmlMenu;
             }
 
-            // Processador inteligente do campo de input (Texto ou Número)
             processarEntradaTxt() {
                 const inputEl = document.getElementById('pestbot-cmd-input');
                 if (!inputEl) return;
                 
                 const entrada = inputEl.value.trim().toLowerCase();
-                inputEl.value = ""; // Limpa a linha de comandos
+                inputEl.value = ""; 
                 
                 if (entrada === "") return;
 
-                // Tenta analisar se o usuário digitou um número válido do menu
                 const numComando = parseInt(entrada, 10);
                 if (!isNaN(numComando) && numComando >= 1 && numComando <= this.modulos.length) {
                     this.executarRoteamento(numComando);
                     return;
                 }
 
-                // Atalhos de comandos por texto escrito
                 if (entrada.includes("tour") || entrada.includes("ajuda") || entrada === "6") {
                     this.reiniciarTourCompleto();
                     return;
@@ -421,7 +429,6 @@
                     return;
                 }
 
-                // Fallback para entradas não reconhecidas pelo Core do Bot
                 const txtContainer = document.getElementById('pestbot-text-container');
                 txtContainer.innerHTML = `
                     <p style="color:#ef4444;"><i class="fa-solid fa-circle-xmark"></i> Comando <strong>"${entrada}"</strong> não reconhecido.</p>
@@ -430,20 +437,17 @@
                 `;
             }
 
-            // Injetor Dinâmico de Roteamento Core - Aciona seu script de navegação nativo!
             executarRoteamento(idModulo) {
                 this.limparHighlightsGerais();
                 const dadosModulo = this.modulos.find(m => m.num === idModulo);
                 
                 if (!dadosModulo) return;
 
-                // Seleciona dinamicamente a coleção de botões da sua sidebar
                 const botoesSidebar = document.querySelectorAll('.nav-buttons .nav-btn');
                 
                 if (botoesSidebar && botoesSidebar.length >= idModulo) {
-                    const botaoAlvo = botoesSidebar[idModulo - 1]; // Array começa em 0
+                    const botaoAlvo = botoesSidebar[idModulo - 1]; 
                     
-                    // Executa a sua própria função global "navegar" injetando o contexto de estilo correto!
                     if (typeof navegar === "function") {
                         navegar(botaoAlvo, dadosModulo.file);
                         
@@ -452,19 +456,18 @@
                             <p style="color: var(--primary, #16a34a); font-weight: 600;">
                                 <i class="fa-solid fa-circle-check"></i> Redirecionando com sucesso!
                             </p>
-                            <p>Você foi movido para o módulo de <strong>${dadosModulo.nome}</strong> através do Terminal.</p>
+                            <p>Você foi movido para o módulo de <strong>${dadosModulo.nome}</strong>.</p>
                             <button class="pestbot-btn" style="margin-top:10px;" onclick="pestBot.avaliarEstadoDoUsuario()"><i class="fa-solid fa-bars"></i> Ver Menu</button>
                         `;
                     } else {
-                        // Backup de segurança caso a função não esteja no escopo global
                         const iframe = document.getElementById('telaExterna');
                         if (iframe) iframe.src = dadosModulo.file;
                     }
                 }
             }
 
-            // --- INTERCEPTAÇÃO PROATIVA: ERRO DE PERFIL INCOMPLETO ---
             solicitarPreenchimentoPerfilProativo() {
+                this.limparHighlightsGerais();
                 const txt = document.getElementById('pestbot-text-container');
                 txt.innerHTML = `
                     <div class="alert-pulse">
@@ -483,8 +486,8 @@
                 `;
             }
 
-            // --- ESTÁGIO: TOUR INTERATIVO EM CAMADAS ---
             iniciarTourGuiado() {
+                this.limparHighlightsGerais();
                 const txt = document.getElementById('pestbot-text-container');
                 const alvo = document.getElementById('passo-1-perfil');
                 if(alvo) alvo.classList.add('pestbot-highlight');
@@ -498,7 +501,7 @@
             }
 
             tourPasso2() {
-                document.getElementById('passo-1-perfil')?.classList.remove('pestbot-highlight');
+                this.limparHighlightsGerais();
                 const txt = document.getElementById('pestbot-text-container');
                 const alvo = document.getElementById('passo-2-monitoramento');
                 if(alvo) alvo.classList.add('pestbot-highlight');
@@ -512,13 +515,15 @@
             }
 
             finalizarTour() {
+                const chaveLocalStorage = this.obterChaveTutorialUsuario();
+                localStorage.setItem(chaveLocalStorage, 'true');
                 this.limparHighlightsGerais();
-                localStorage.setItem('pestbot_tutorial_completo', 'true');
                 this.avaliarEstadoDoUsuario();
             }
 
             reiniciarTourCompleto() {
-                localStorage.removeItem('pestbot_tutorial_completo');
+                const chaveLocalStorage = this.obterChaveTutorialUsuario();
+                localStorage.removeItem(chaveLocalStorage);
                 this.iniciarTourGuiado();
             }
 
@@ -548,9 +553,16 @@
             }
         }
 
-        // Inicialização em Sandbox Isolado
+        // Intercepta cliques gerais na sidebar para remover tela escura se o usuário tentar ignorar o tutorial
         document.addEventListener("DOMContentLoaded", () => {
             window.pestBot = new PestBotManager();
+            
+            const botoesMenu = document.querySelectorAll('.nav-buttons .nav-btn');
+            botoesMenu.forEach(botao => {
+                botao.addEventListener('click', () => {
+                    if(window.pestBot) window.pestBot.limparHighlightsGerais();
+                });
+            });
         });
     </script>
     <script src="js/dashboard_empresa.js"></script>
