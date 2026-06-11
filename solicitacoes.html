@@ -28,7 +28,6 @@
             font-family: 'Rajdhani', sans-serif;
         }
 
-        /* 👁️ Suporte Dinâmico a Acessibilidade Neurodivergente */
         [data-sensory="calm"] .gps-pulse-icon {
             animation: none !important;
             box-shadow: none !important;
@@ -60,7 +59,6 @@
             border: 1px solid var(--border-color);
         }
 
-        /* 🛰️ Radar/Pulso de Geolocalização Customizado */
         .gps-pulse-icon {
             display: block;
             width: 14px;
@@ -192,22 +190,29 @@
         }).addTo(map);
     }
 
-    // CORREÇÃO CRÍTICA: Tratamento do Token JWT para evitar envio sujo "Bearer Bearer..."
+    // NOVA FUNÇÃO: Resgata o token sem sujeiras
     function obterTokenLimpo() {
         const inputManual = document.getElementById("jwt-input").value.trim();
         let tokenBruto = inputManual || localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || localStorage.getItem("token_usuario") || "";
         
-        // Remove a palavra "Bearer " se ela vier grudada no banco local para o fetch funcionar
+        // Remove aspas excedentes se existirem (Pode acontecer no localStorage de certas stacks)
+        tokenBruto = tokenBruto.replace(/^"|"$/g, '');
+
         if (tokenBruto.toLowerCase().startsWith("bearer ")) {
-            tokenBruto = tokenBruto.substring(7).trim();
+            return tokenBruto.substring(7).trim(); // Extrai apenas a assinatura criptografada
         }
-        return tokenBruto;
+        return tokenBruto.trim();
     }
 
     function atualizarTokenManual(valor) {
         const statusLabel = document.getElementById("token-status");
         if (valor.trim().length > 10) {
-            localStorage.setItem("token", valor.trim());
+            // Remove a máscara Bearer caso o usuário cole com ela
+            let tokenValidado = valor.trim().replace(/^"|"$/g, '');
+            if(tokenValidado.toLowerCase().startsWith("bearer ")){
+                tokenValidado = tokenValidado.substring(7).trim();
+            }
+            localStorage.setItem("token", tokenValidado);
             statusLabel.innerText = "JWT INJETADO";
             statusLabel.className = "text-[#3DDC84] font-bold";
             carregarSolicitacoes();
@@ -222,21 +227,24 @@
         const token = obterTokenLimpo();
         const container = document.getElementById("lista-solicitacoes");
 
-        if (!token) {
+        if (!token || token.length < 10) {
             container.innerHTML = `
                 <div class="text-center py-8 px-4 border border-dashed border-red-500/30 rounded-lg bg-red-500/5">
-                    <p class="text-xs text-red-400 font-bold uppercase mb-1">Acesso Bloqueado (Erro 401)</p>
-                    <p class="text-[11px] text-gray-500">Insira um token JWT válido para sincronizar.</p>
+                    <p class="text-xs text-red-400 font-bold uppercase mb-1">Acesso Bloqueado (Falta JWT)</p>
+                    <p class="text-[11px] text-gray-500">Insira um token válido no campo superior para sincronizar as Ordens.</p>
                 </div>`;
             return;
         }
 
         try {
+            console.log("Realizando fetch. Token interceptado (primeiros caracteres): " + token.substring(0,10) + "...");
             const response = await fetch(`${API_BASE_URL}/api/ordens`, {
                 method: "GET",
                 headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
+                    // Garantimos a formatação correta que o Spring Security exige
+                    "Authorization": `Bearer ${token}`, 
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
                 }
             });
             
@@ -247,17 +255,20 @@
             renderizarListaFiltrada();
 
         } catch (error) {
-            console.error("Falha ao puxar dados da API:", error);
+            console.error("Erro Detectado no Fetch:", error);
             
             if(error.message === "TOKEN_INVALIDO") {
-                 container.innerHTML = `<p class="text-xs text-red-400 text-center py-6 font-bold">Falha de Autenticação: O Token JWT expirou ou é inválido.</p>`;
+                 container.innerHTML = `
+                 <div class="text-center py-6 border border-dashed border-red-500/30 rounded bg-red-500/5">
+                     <p class="text-xs text-red-400 font-bold uppercase">Falha 401: Token Expirou ou Não Reconhecido</p>
+                     <p class="text-[10px] text-gray-400 mt-2">O seu login expirou ou você não tem permissão para visualizar ordens de serviço. Tente relogar no app.</p>
+                 </div>`;
             } else {
-                 container.innerHTML = `<p class="text-xs text-red-400 text-center py-6">Falha ao conectar com o cluster Render.</p>`;
+                 container.innerHTML = `<p class="text-xs text-red-400 text-center py-6">Falha de Servidor: Problema ao conectar com o Cluster Render.</p>`;
             }
         }
     }
 
-    // Renderizador Inteligente com Mecanismo de Filtro por Estado (Todas, Abertas, Em Rota)
     function renderizarListaFiltrada() {
         const container = document.getElementById("lista-solicitacoes");
         container.innerHTML = "";
@@ -273,7 +284,6 @@
                 emAndamento++;
             }
 
-            // Regra de Filtro
             if (filtroStatusAtual === 'ABERTA' && !(statusOS === 'PENDENTE' || statusOS === 'ABERTA' || statusOS === 'NOVAS')) return;
             if (filtroStatusAtual === 'EM_CAMPO' && !(statusOS === 'ACEITO' || statusOS === 'EM_ANDAMENTO' || statusOS === 'EM_ATENDIMENTO' || statusOS === 'EM_ROTA')) return;
 
@@ -325,7 +335,6 @@
         filtroStatusAtual = status;
         document.querySelectorAll('.filters-container button').forEach(b => b.classList.replace('bg-[#21262d]', 'bg-[#0d1117]'));
         
-        // Estiliza botões de filtro ativos
         const btnAll = document.getElementById('filter-all');
         const btnOpen = document.getElementById('filter-open');
         const btnField = document.getElementById('filter-field');
@@ -387,7 +396,7 @@
         if (activeTrackingId) {
             document.getElementById(`card-os-${activeTrackingId}`)?.classList.remove('active');
         }
-        if (mockInterval) clearInterval(mockInterval); // Para simulações se existirem
+        if (mockInterval) clearInterval(mockInterval);
 
         activeTrackingId = idOrdem;
         document.getElementById(`card-os-${idOrdem}`)?.classList.add('active');
@@ -454,7 +463,6 @@
         currentMarker.bindPopup(`<div class="text-black font-sans text-xs"><b>Viatura PestControlX</b><br>Trabalhando na OS #${idOrdem}</div>`).openPopup();
     }
 
-    // 🧪 MOCK SIMULADOR
     function acionarModoDemonstracao() {
         if (stompClient) stompClient.disconnect();
         if (mockInterval) clearInterval(mockInterval);
