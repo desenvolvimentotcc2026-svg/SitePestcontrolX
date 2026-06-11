@@ -150,16 +150,26 @@
         }).addTo(map);
     }
 
-    // 🛡️ NOVO SISTEMA DE LIMPEZA DE TOKEN (Extremamente Robusto)
+    // 🛡️ REFINADO: Limpeza de Token Implacável
     function obterTokenLimpo() {
-        const inputManual = document.getElementById("jwt-input").value.trim();
-        let tokenBruto = inputManual || localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || localStorage.getItem("token_usuario") || "";
+        // Tenta pegar o que o usuário colou primeiro
+        const inputManual = document.getElementById("jwt-input").value;
+        
+        let tokenBruto = "";
+
+        // Verificamos se o que o usuário digitou é válido (um JWT completo e não a máscara "...")
+        if (inputManual && !inputManual.includes("...")) {
+             tokenBruto = inputManual;
+        } else {
+             // Se não for válido, usamos o do LocalStorage
+             tokenBruto = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || localStorage.getItem("token_usuario") || "";
+        }
         
         if (!tokenBruto) return null;
 
-        tokenBruto = tokenBruto.replace(/^"|"$/g, '').trim(); // Limpa aspas do localStorage
+        // Limpa formatações indesejadas
+        tokenBruto = tokenBruto.replace(/^"|"$/g, '').trim(); 
 
-        // Se o token já começa com "Bearer ", removemos para garantir que não mande "Bearer Bearer..."
         if (tokenBruto.toLowerCase().startsWith("bearer ")) {
             tokenBruto = tokenBruto.substring(7).trim();
         }
@@ -169,42 +179,47 @@
 
     function atualizarTokenManual(valor) {
         const statusLabel = document.getElementById("token-status");
-        if (valor.trim().length > 20) {
+        
+        // Só aceita tokens grandes e completos para não quebrar a API
+        if (valor.trim().length > 50 && !valor.includes("...")) {
             let tokenValidado = valor.trim().replace(/^"|"$/g, '');
             if(tokenValidado.toLowerCase().startsWith("bearer ")){
                 tokenValidado = tokenValidado.substring(7).trim();
             }
+            
+            // Salva no storage de forma definitiva
             localStorage.setItem("token", tokenValidado);
             statusLabel.innerText = "JWT INJETADO";
             statusLabel.className = "text-[#3DDC84] font-bold";
             carregarSolicitacoes();
-        } else {
-            statusLabel.innerText = "JWT AUSENTE";
-            statusLabel.className = "text-red-400 font-bold";
+        } else if (valor.trim().length <= 50 && !valor.includes("...")) {
+            statusLabel.innerText = "JWT INVÁLIDO";
+            statusLabel.className = "text-yellow-500 font-bold";
+        } else if (valor === "") {
+             statusLabel.innerText = "JWT AUSENTE";
+             statusLabel.className = "text-red-400 font-bold";
         }
     }
 
-    // 🔥 FETCH TOTALMENTE BLINDADO COM CORS E TRATAMENTO DE ERRO
     async function carregarSolicitacoes() {
         const token = obterTokenLimpo();
         const container = document.getElementById("lista-solicitacoes");
 
-        if (!token || token.length < 20) {
+        // Verifica se o token tem o tamanho mínimo de um JWT real
+        if (!token || token.length < 50) {
             container.innerHTML = `
                 <div class="text-center py-8 px-4 border border-dashed border-red-500/30 rounded-lg bg-red-500/5">
                     <p class="text-xs text-red-400 font-bold uppercase mb-1">Acesso Bloqueado</p>
-                    <p class="text-[11px] text-gray-500">Nenhum token JWT válido foi detectado.</p>
+                    <p class="text-[11px] text-gray-500">Insira um token JWT completo e válido para sincronizar.</p>
                 </div>`;
             return;
         }
 
         try {
             console.log(`📡 Disparando Fetch para ${API_BASE_URL}/api/ordens...`);
-            console.log(`🔑 Header formatado como: Bearer ${token.substring(0,15)}...`);
-
+            
             const response = await fetch(`${API_BASE_URL}/api/ordens`, {
                 method: "GET",
-                // MODO CORS ESSENCIAL
                 mode: 'cors',
                 headers: {
                     "Authorization": `Bearer ${token}`, 
@@ -213,7 +228,6 @@
                 }
             });
             
-            // Tratamento cirúrgico do erro
             if (!response.ok) {
                 const errorMessage = await response.text();
                 console.error(`❌ Servidor recusou. Status: ${response.status}. Motivo: ${errorMessage}`);
@@ -234,13 +248,13 @@
                  container.innerHTML = `
                  <div class="text-center py-6 border border-dashed border-red-500/30 rounded bg-red-500/5">
                      <p class="text-xs text-red-400 font-bold uppercase">🚨 401: Token Recusado pelo Servidor</p>
-                     <p class="text-[10px] text-gray-400 mt-2">O seu back-end em Java/Spring rejeitou este token. Ele pode estar expirado ou o usuário não tem permissão de ROLE_ADMIN. Gere um token novo e cole acima.</p>
+                     <p class="text-[10px] text-gray-400 mt-2">O seu token é inválido ou expirou. Gere um novo token no Back-End e cole acima.</p>
                  </div>`;
             } else {
                  container.innerHTML = `
                  <div class="text-center py-6 border border-dashed border-red-500/30 rounded bg-red-500/5">
                      <p class="text-xs text-red-400 font-bold uppercase">🚨 Falha de Conexão CORS/Network</p>
-                     <p class="text-[10px] text-gray-400 mt-2">O Render pode estar em modo 'Sleep' ou o servidor não permitiu o CORS. Verifique os logs do Java.</p>
+                     <p class="text-[10px] text-gray-400 mt-2">Verifique se o seu servidor Render está online e aceitando conexões.</p>
                  </div>`;
             }
         }
@@ -497,11 +511,16 @@
         }
 
         const tokenSalvo = obterTokenLimpo();
-        if (tokenSalvo) {
-            document.getElementById("jwt-input").value = tokenSalvo.substring(0, 15) + "..................";
+        if (tokenSalvo && tokenSalvo.length > 50) {
+            // Se tiver token de verdade, mascara na tela para não ficar feio
+            document.getElementById("jwt-input").value = tokenSalvo.substring(0, 15) + "...";
             const statusLabel = document.getElementById("token-status");
             statusLabel.innerText = "JWT ATIVO";
             statusLabel.className = "text-[#3DDC84] font-bold";
+        } else {
+            // Se o que tiver for inválido, limpa tudo.
+            document.getElementById("jwt-input").value = "";
+            localStorage.removeItem("token");
         }
         carregarSolicitacoes();
     };
