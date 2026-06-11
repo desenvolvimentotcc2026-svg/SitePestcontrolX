@@ -192,10 +192,16 @@
         }).addTo(map);
     }
 
-    function obterTokenAutenticacao() {
-        const inputToken = document.getElementById("jwt-input").value.trim();
-        if (inputToken) return inputToken;
-        return localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || localStorage.getItem("token_usuario") || "";
+    // CORREÇÃO CRÍTICA: Tratamento do Token JWT para evitar envio sujo "Bearer Bearer..."
+    function obterTokenLimpo() {
+        const inputManual = document.getElementById("jwt-input").value.trim();
+        let tokenBruto = inputManual || localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || localStorage.getItem("token_usuario") || "";
+        
+        // Remove a palavra "Bearer " se ela vier grudada no banco local para o fetch funcionar
+        if (tokenBruto.toLowerCase().startsWith("bearer ")) {
+            tokenBruto = tokenBruto.substring(7).trim();
+        }
+        return tokenBruto;
     }
 
     function atualizarTokenManual(valor) {
@@ -211,22 +217,21 @@
         }
     }
 
-    // Carrega chamados unificando endpoints e evitando crashes de dados
+    // Carrega chamados e resolve o ERRO 401
     async function carregarSolicitacoes() {
-        const token = obterTokenAutenticacao();
+        const token = obterTokenLimpo();
         const container = document.getElementById("lista-solicitacoes");
 
         if (!token) {
             container.innerHTML = `
                 <div class="text-center py-8 px-4 border border-dashed border-red-500/30 rounded-lg bg-red-500/5">
                     <p class="text-xs text-red-400 font-bold uppercase mb-1">Acesso Bloqueado (Erro 401)</p>
-                    <p class="text-[11px] text-gray-500">Insira um token JWT de operador válido para sincronizar.</p>
+                    <p class="text-[11px] text-gray-500">Insira um token JWT válido para sincronizar.</p>
                 </div>`;
             return;
         }
 
         try {
-            // Varre o endpoint principal de ordens
             const response = await fetch(`${API_BASE_URL}/api/ordens`, {
                 method: "GET",
                 headers: {
@@ -243,7 +248,12 @@
 
         } catch (error) {
             console.error("Falha ao puxar dados da API:", error);
-            container.innerHTML = `<p class="text-xs text-red-400 text-center py-6">Falha ao conectar com o cluster Render.</p>`;
+            
+            if(error.message === "TOKEN_INVALIDO") {
+                 container.innerHTML = `<p class="text-xs text-red-400 text-center py-6 font-bold">Falha de Autenticação: O Token JWT expirou ou é inválido.</p>`;
+            } else {
+                 container.innerHTML = `<p class="text-xs text-red-400 text-center py-6">Falha ao conectar com o cluster Render.</p>`;
+            }
         }
     }
 
@@ -276,7 +286,7 @@
             if (statusOS === 'PENDENTE' || statusOS === 'ABERTA' || statusOS === 'NOVAS') {
                 statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">ABERTA</span>`;
                 acaoBtn = `
-                    <button onclick="visualizarEMontarOrdem(${JSON.stringify(ordem).replace(/"/g, '&quot;')})" class="mt-3 w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold text-[11px] py-1.5 px-3 rounded transition tracking-wider">
+                    <button onclick='visualizarEMontarOrdem(${JSON.stringify(ordem).replace(/'/g, "\\'")})' class="mt-3 w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold text-[11px] py-1.5 px-3 rounded transition tracking-wider">
                         🤝 INSPECIONAR E ACEITAR O.S.
                     </button>`;
             } else {
@@ -353,7 +363,7 @@
     }
 
     async function aceitarOrdemEmpresa(ordemId) {
-        const token = obterTokenAutenticacao();
+        const token = obterTokenLimpo();
         try {
             const response = await fetch(`${API_BASE_URL}/api/ordens/${ordemId}/aceitar?funcionarioId=99`, {
                 method: "PUT",
@@ -399,9 +409,9 @@
 
         const socket = new SockJS(`${API_BASE_URL}/ws-pestcontrol-sockjs`);
         stompClient = Stomp.over(socket);
-        stompClient.debug = null; // Oculta logs poluídos no console de desenvolvedor
+        stompClient.debug = null; 
 
-        const token = obterTokenAutenticacao();
+        const token = obterTokenLimpo();
         const headers = { "Authorization": `Bearer ${token}` };
 
         stompClient.connect(headers, function (frame) {
@@ -428,7 +438,6 @@
         const coordenadas = [lat, lng];
         logTerminal(`Lat ${lat.toFixed(6)} | Lng ${lng.toFixed(6)} [Transmissão Homologada]`);
 
-        // Cria o marcador com estilo minimalista de radar neon
         const radarIcon = L.divIcon({
             className: 'custom-gps-marker',
             html: '<span class="gps-pulse-icon"></span>',
@@ -445,7 +454,7 @@
         currentMarker.bindPopup(`<div class="text-black font-sans text-xs"><b>Viatura PestControlX</b><br>Trabalhando na OS #${idOrdem}</div>`).openPopup();
     }
 
-    // 🧪 MOCK SIMULADOR (Para garantir a nota 10 na sua apresentação de TCC)
+    // 🧪 MOCK SIMULADOR
     function acionarModoDemonstracao() {
         if (stompClient) stompClient.disconnect();
         if (mockInterval) clearInterval(mockInterval);
@@ -460,7 +469,6 @@
 
         mockInterval = setInterval(() => {
             iteracao++;
-            // Move ligeiramente a viatura a cada ciclo simulando movimento em rua
             latBase += (Math.random() - 0.5) * 0.003;
             lngBase += (Math.random() - 0.5) * 0.003;
             
@@ -480,11 +488,7 @@
         logBox.insertBefore(logItem, logBox.firstChild);
     }
 
-    // 👂 Listener de mensageria para ouvir recursos de acessibilidade da tela pai
     window.addEventListener('message', function(event) {
-        if (event.data && event.data.tipo === 'sincronizarTema') {
-            // Sincroniza atributos estruturais na raiz caso necessário
-        }
         if (localStorage.getItem('sensory_calm') === 'true') {
             document.documentElement.setAttribute('data-sensory', 'calm');
         } else {
@@ -495,12 +499,11 @@
     window.onload = () => {
         initMap();
         
-        // Verifica se há acessibilidade salva
         if (localStorage.getItem('sensory_calm') === 'true') {
             document.documentElement.setAttribute('data-sensory', 'calm');
         }
 
-        const tokenSalvo = obterTokenAutenticacao();
+        const tokenSalvo = obterTokenLimpo();
         if (tokenSalvo) {
             document.getElementById("jwt-input").value = tokenSalvo.substring(0, 15) + "..................";
             const statusLabel = document.getElementById("token-status");
