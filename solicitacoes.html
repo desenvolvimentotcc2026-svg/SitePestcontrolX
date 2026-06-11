@@ -17,59 +17,22 @@
             --neon-glow: rgba(61, 220, 132, 0.25);
             --border-color: #21262d;
         }
-
-        body {
-            background-color: var(--bg-cyber);
-            color: #c9d1d9;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        h1, h2, h3, .brand-font {
-            font-family: 'Rajdhani', sans-serif;
-        }
-
-        [data-sensory="calm"] .gps-pulse-icon {
-            animation: none !important;
-            box-shadow: none !important;
-        }
-
+        body { background-color: var(--bg-cyber); color: #c9d1d9; font-family: 'JetBrains Mono', monospace; }
+        h1, h2, h3, .brand-font { font-family: 'Rajdhani', sans-serif; }
+        [data-sensory="calm"] .gps-pulse-icon { animation: none !important; box-shadow: none !important; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: var(--bg-cyber); }
         ::-webkit-scrollbar-thumb { background: #21262d; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--neon-green); }
-
-        .neon-border {
-            border: 1px solid var(--border-color);
-            transition: all 0.3s ease;
-        }
-        .neon-border:hover, .neon-border.active {
-            border-color: var(--neon-green);
-            box-shadow: 0 0 15px var(--neon-glow);
-        }
-
-        .neon-text {
-            color: var(--neon-green);
-            text-shadow: 0 0 8px var(--neon-glow);
-        }
-
-        #map {
-            height: 520px;
-            background: #0b0e14;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-        }
-
+        .neon-border { border: 1px solid var(--border-color); transition: all 0.3s ease; }
+        .neon-border:hover, .neon-border.active { border-color: var(--neon-green); box-shadow: 0 0 15px var(--neon-glow); }
+        .neon-text { color: var(--neon-green); text-shadow: 0 0 8px var(--neon-glow); }
+        #map { height: 520px; background: #0b0e14; border-radius: 12px; border: 1px solid var(--border-color); }
         .gps-pulse-icon {
-            display: block;
-            width: 14px;
-            height: 14px;
-            background: var(--neon-green);
-            border: 2px solid #ffffff;
-            border-radius: 50%;
-            box-shadow: 0 0 0 0 rgba(61, 220, 132, 0.8);
+            display: block; width: 14px; height: 14px; background: var(--neon-green);
+            border: 2px solid #ffffff; border-radius: 50%; box-shadow: 0 0 0 0 rgba(61, 220, 132, 0.8);
             animation: pulse 1.6s infinite;
         }
-
         @keyframes pulse {
             0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(61, 220, 132, 0.7); }
             70% { transform: scale(1); box-shadow: 0 0 0 14px rgba(61, 220, 132, 0); }
@@ -125,7 +88,7 @@
                     </div>
                 </div>
 
-                <div class="flex gap-2 mb-4 text-xs font-bold">
+                <div class="flex gap-2 mb-4 text-xs font-bold filters-container">
                     <button onclick="filtrarLista('TODAS')" id="filter-all" class="px-3 py-1.5 rounded bg-[#21262d] text-white border border-transparent hover:border-[#3DDC84]">Todas</button>
                     <button onclick="filtrarLista('ABERTA')" id="filter-open" class="px-3 py-1.5 rounded bg-[#0d1117] text-gray-400 border border-[#21262d] hover:text-yellow-500">Abertas</button>
                     <button onclick="filtrarLista('EM_CAMPO')" id="filter-field" class="px-3 py-1.5 rounded bg-[#0d1117] text-gray-400 border border-[#21262d] hover:text-[#3DDC84]">Em Campo</button>
@@ -143,7 +106,6 @@
 
         <section class="lg:col-span-7 flex flex-col gap-4">
             <div class="bg-[#161b22] p-4 rounded-xl border border-[#21262d] relative">
-                
                 <div class="absolute top-6 right-6 z-[1000] flex items-center gap-2">
                     <button onclick="acionarModoDemonstracao()" class="bg-purple-600/20 hover:bg-purple-600/40 text-purple-400 border border-purple-500/30 text-[10px] font-bold px-2 py-1 rounded transition">
                         🧪 MOCK SIMULADOR
@@ -182,32 +144,32 @@
     let mockInterval = null;
 
     function initMap() {
-        map = L.map('map').setView([-23.55052, -46.633308], 12); // Posição padrão (São Paulo Centro)
+        map = L.map('map').setView([-23.55052, -46.633308], 12);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap &copy; CARTO',
-            subdomains: 'abcd',
-            maxZoom: 20
+            attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abcd', maxZoom: 20
         }).addTo(map);
     }
 
-    // NOVA FUNÇÃO: Resgata o token sem sujeiras
+    // 🛡️ NOVO SISTEMA DE LIMPEZA DE TOKEN (Extremamente Robusto)
     function obterTokenLimpo() {
         const inputManual = document.getElementById("jwt-input").value.trim();
         let tokenBruto = inputManual || localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || localStorage.getItem("token_usuario") || "";
         
-        // Remove aspas excedentes se existirem (Pode acontecer no localStorage de certas stacks)
-        tokenBruto = tokenBruto.replace(/^"|"$/g, '');
+        if (!tokenBruto) return null;
 
+        tokenBruto = tokenBruto.replace(/^"|"$/g, '').trim(); // Limpa aspas do localStorage
+
+        // Se o token já começa com "Bearer ", removemos para garantir que não mande "Bearer Bearer..."
         if (tokenBruto.toLowerCase().startsWith("bearer ")) {
-            return tokenBruto.substring(7).trim(); // Extrai apenas a assinatura criptografada
+            tokenBruto = tokenBruto.substring(7).trim();
         }
-        return tokenBruto.trim();
+
+        return tokenBruto;
     }
 
     function atualizarTokenManual(valor) {
         const statusLabel = document.getElementById("token-status");
-        if (valor.trim().length > 10) {
-            // Remove a máscara Bearer caso o usuário cole com ela
+        if (valor.trim().length > 20) {
             let tokenValidado = valor.trim().replace(/^"|"$/g, '');
             if(tokenValidado.toLowerCase().startsWith("bearer ")){
                 tokenValidado = tokenValidado.substring(7).trim();
@@ -222,49 +184,64 @@
         }
     }
 
-    // Carrega chamados e resolve o ERRO 401
+    // 🔥 FETCH TOTALMENTE BLINDADO COM CORS E TRATAMENTO DE ERRO
     async function carregarSolicitacoes() {
         const token = obterTokenLimpo();
         const container = document.getElementById("lista-solicitacoes");
 
-        if (!token || token.length < 10) {
+        if (!token || token.length < 20) {
             container.innerHTML = `
                 <div class="text-center py-8 px-4 border border-dashed border-red-500/30 rounded-lg bg-red-500/5">
-                    <p class="text-xs text-red-400 font-bold uppercase mb-1">Acesso Bloqueado (Falta JWT)</p>
-                    <p class="text-[11px] text-gray-500">Insira um token válido no campo superior para sincronizar as Ordens.</p>
+                    <p class="text-xs text-red-400 font-bold uppercase mb-1">Acesso Bloqueado</p>
+                    <p class="text-[11px] text-gray-500">Nenhum token JWT válido foi detectado.</p>
                 </div>`;
             return;
         }
 
         try {
-            console.log("Realizando fetch. Token interceptado (primeiros caracteres): " + token.substring(0,10) + "...");
+            console.log(`📡 Disparando Fetch para ${API_BASE_URL}/api/ordens...`);
+            console.log(`🔑 Header formatado como: Bearer ${token.substring(0,15)}...`);
+
             const response = await fetch(`${API_BASE_URL}/api/ordens`, {
                 method: "GET",
+                // MODO CORS ESSENCIAL
+                mode: 'cors',
                 headers: {
-                    // Garantimos a formatação correta que o Spring Security exige
                     "Authorization": `Bearer ${token}`, 
                     "Content-Type": "application/json",
                     "Accept": "application/json"
                 }
             });
             
-            if (response.status === 401 || response.status === 403) throw new Error("TOKEN_INVALIDO");
-            if (!response.ok) throw new Error("ERRO_SERVIDORES");
+            // Tratamento cirúrgico do erro
+            if (!response.ok) {
+                const errorMessage = await response.text();
+                console.error(`❌ Servidor recusou. Status: ${response.status}. Motivo: ${errorMessage}`);
+                
+                if (response.status === 401 || response.status === 403) {
+                    throw new Error("TOKEN_RECUSADO");
+                }
+                throw new Error("ERRO_SERVIDOR");
+            }
             
             listaCompletaOrdens = await response.json();
             renderizarListaFiltrada();
 
         } catch (error) {
-            console.error("Erro Detectado no Fetch:", error);
+            console.error("🚨 Erro Crítico no Frontend:", error);
             
-            if(error.message === "TOKEN_INVALIDO") {
+            if(error.message === "TOKEN_RECUSADO") {
                  container.innerHTML = `
                  <div class="text-center py-6 border border-dashed border-red-500/30 rounded bg-red-500/5">
-                     <p class="text-xs text-red-400 font-bold uppercase">Falha 401: Token Expirou ou Não Reconhecido</p>
-                     <p class="text-[10px] text-gray-400 mt-2">O seu login expirou ou você não tem permissão para visualizar ordens de serviço. Tente relogar no app.</p>
+                     <p class="text-xs text-red-400 font-bold uppercase">🚨 401: Token Recusado pelo Servidor</p>
+                     <p class="text-[10px] text-gray-400 mt-2">O seu back-end em Java/Spring rejeitou este token. Ele pode estar expirado ou o usuário não tem permissão de ROLE_ADMIN. Gere um token novo e cole acima.</p>
                  </div>`;
             } else {
-                 container.innerHTML = `<p class="text-xs text-red-400 text-center py-6">Falha de Servidor: Problema ao conectar com o Cluster Render.</p>`;
+                 container.innerHTML = `
+                 <div class="text-center py-6 border border-dashed border-red-500/30 rounded bg-red-500/5">
+                     <p class="text-xs text-red-400 font-bold uppercase">🚨 Falha de Conexão CORS/Network</p>
+                     <p class="text-[10px] text-gray-400 mt-2">O Render pode estar em modo 'Sleep' ou o servidor não permitiu o CORS. Verifique os logs do Java.</p>
+                 </div>`;
             }
         }
     }
@@ -275,8 +252,15 @@
 
         let pendentes = 0, emAndamento = 0;
 
+        if (!listaCompletaOrdens || listaCompletaOrdens.length === 0) {
+            container.innerHTML = `<p class="text-xs text-gray-500 text-center py-8">Nenhuma Ordem de Serviço encontrada no banco.</p>`;
+            document.getElementById("counter-pendente").innerText = 0;
+            document.getElementById("counter-andamento").innerText = 0;
+            return;
+        }
+
         listaCompletaOrdens.forEach(ordem => {
-            const statusOS = (ordem.status || "").toUpperCase();
+            const statusOS = (ordem.status || "PENDENTE").toUpperCase();
             
             if (statusOS === 'PENDENTE' || statusOS === 'ABERTA' || statusOS === 'NOVAS') {
                 pendentes++;
@@ -376,6 +360,7 @@
         try {
             const response = await fetch(`${API_BASE_URL}/api/ordens/${ordemId}/aceitar?funcionarioId=99`, {
                 method: "PUT",
+                mode: 'cors',
                 headers: {
                     "Authorization": `Bearer ${token}`,
                     "Content-Type": "application/json"
@@ -388,7 +373,7 @@
             carregarSolicitacoes();
             document.getElementById("visualizador-os-completa").innerHTML = '<p class="text-xs text-gray-600 italic">Equipe despachada para o alvo com sucesso.</p>';
         } catch (e) {
-            alert("Erro ao despachar Ordem para o banco de dados.");
+            alert("Erro ao despachar Ordem para o banco de dados. Verifique a conexão com o Render.");
         }
     }
 
