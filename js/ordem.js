@@ -15,6 +15,8 @@ document.addEventListener("DOMContentLoaded", function() {
         const payload = {
             clienteId: parseInt(document.getElementById("clienteId").value),
             empresaId: parseInt(document.getElementById("empresaId").value),
+            nomeCliente: document.getElementById("nomeCliente").value, // NOVO
+            enderecoCompleto: `${document.getElementById("endereco").value}, ${document.getElementById("numero").value} - ${document.getElementById("complemento").value}`, // NOVO
             pragaAlvo: document.getElementById("pragaAlvo").value,
             descricao: document.getElementById("descricao").value,
             status: "ABERTA"
@@ -37,4 +39,20 @@ document.addEventListener("DOMContentLoaded", function() {
         })
         .catch(err => console.error("Erro na requisição:", err));
     });
+
+    // Função para buscar CEP automaticamente
+function buscarEnderecoPorCEP(cep) {
+    const cepLimpo = cep.replace(/\D/g, ''); // Limpa pontuação
+    if (cepLimpo.length === 8) {
+        fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`)
+            .then(res => res.json())
+            .then(data => {
+                if (!data.erro) {
+                    document.getElementById("endereco").value = `${data.logradouro}, ${data.bairro} - ${data.localidade}/${data.uf}`;
+                    document.getElementById("numero").focus(); // Joga o cursor pro número
+                }
+            })
+            .catch(err => console.error("Erro na busca de CEP", err));
+    }
+}
 });

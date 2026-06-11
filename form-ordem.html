@@ -90,6 +90,21 @@
         <label>Código de Identificação do Cliente</label>
         <input type="text" id="clienteId" readonly>
 
+        <label>Nome do Cliente / Solicitante</label>
+        <input type="text" id="nomeCliente" placeholder="Ex: Condomínio Villa Lobos" required>
+
+        <label>CEP do Local</label>
+        <input type="text" id="cep" placeholder="00000-000" onblur="buscarEnderecoPorCEP(this.value)">
+
+        <label>Endereço Completo (Rua/Avenida)</label>
+        <input type="text" id="endereco" placeholder="Ex: Avenida Paulista" required>
+
+        <label>Número e Complemento</label>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="numero" placeholder="Nº 1000" style="flex: 1;" required>
+            <input type="text" id="complemento" placeholder="Apto 45" style="flex: 2;">
+        </div>
+
         <label>Código da Empresa Vinculada</label>
         <input type="text" id="empresaId" readonly>
 
