@@ -178,20 +178,20 @@
 
     // LER: Busca técnicos do banco de dados
     async function carregarEquipeDaAPI() {
+        let token = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || "";
+        token = token.replace(/^"|"$/g, '');
+
         try {
-            const response = await fetch(`${API_BASE_URL}/funcionarios`);
+            const response = await fetch(`${API_BASE_URL}/funcionarios`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (response.ok) {
                 const todosFuncionarios = await response.json();
-                
-                // Filtra no frontend apenas os da empresa logada (Idealmente, o Spring Boot deve ter uma rota /funcionarios/empresa/{id})
-                // equipe = todosFuncionarios.filter(f => f.empresa && f.empresa.id === parseInt(EMPRESA_ID));
-                
-                equipe = todosFuncionarios; // Usando todos para o teste atual
+                equipe = todosFuncionarios;
                 renderizarEquipe();
             }
         } catch (error) {
             console.error("Erro ao buscar equipe:", error);
-            alert("Não foi possível carregar os técnicos do servidor.");
         }
     }
 
@@ -236,7 +236,7 @@
     }
 
     // CRIAR E ATUALIZAR: Envia dados para o servidor
-    async function salvarTecnico(event) {
+   async function salvarTecnico(event) {
         event.preventDefault();
 
         const id = document.getElementById('tec-id').value;
@@ -245,24 +245,31 @@
             especialidade: document.getElementById('tec-espec').value,
             telefone: document.getElementById('tec-tel').value,
             status: document.getElementById('tec-status').value.toUpperCase(),
-            email: document.getElementById('tec-tel').value + "@tecnico.com" // Mock de email obrigatório para cadastro se não houver campo
+            email: document.getElementById('tec-tel').value + "@tecnico.com"
         };
 
         const url = id ? `${API_BASE_URL}/funcionarios/${id}` : `${API_BASE_URL}/funcionarios?empresa_id=${EMPRESA_ID}`;
         const metodo = id ? 'PUT' : 'POST';
 
+        // Pega o token limpo (igual você fez no painel de ordens)
+        let token = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || "";
+        token = token.replace(/^"|"$/g, '');
+
         try {
             const response = await fetch(url, {
                 method: metodo,
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` // INJETANDO O TOKEN AQUI!
+                },
                 body: JSON.stringify(payload)
             });
 
             if (response.ok) {
                 fecharModal();
-                carregarEquipeDaAPI(); // Recarrega a lista do servidor
+                carregarEquipeDaAPI();
             } else {
-                alert("Erro ao salvar funcionário.");
+                alert("Erro 401: Token inválido ou expirado. Faça login novamente.");
             }
         } catch (error) {
             console.error("Falha na rede:", error);
@@ -281,14 +288,18 @@
     }
 
     // DELETAR: Remove do servidor
-    async function deletarTecnico(id) {
-        if (confirm("Deseja realmente remover este técnico do sistema? Ele perderá o acesso ao app.")) {
+   async function deletarTecnico(id) {
+        if (confirm("Deseja realmente remover este técnico?")) {
+            let token = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || "";
+            token = token.replace(/^"|"$/g, '');
+
             try {
-                const response = await fetch(`${API_BASE_URL}/funcionarios/${id}`, { method: 'DELETE' });
+                const response = await fetch(`${API_BASE_URL}/funcionarios/${id}`, { 
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
                 if (response.ok) {
                     carregarEquipeDaAPI();
-                } else {
-                    alert("Erro ao remover técnico.");
                 }
             } catch (error) {
                 console.error("Falha ao deletar:", error);
