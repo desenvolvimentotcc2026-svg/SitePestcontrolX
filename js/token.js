@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById("form-token");
+    const btnReenviar = document.getElementById("btn-reenviar"); // Elemento de reenvio
     const BASE_URL = "https://appdedetizacao.onrender.com";
 
     if (!form) {
@@ -7,11 +8,23 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
     }
 
+    // LISTENER 1: Enviar/Validar Token
     form.addEventListener("submit", function (e) {
         e.preventDefault();
         validarToken();
     });
 
+    // LISTENER 2: Reenviar Código (Se o botão existir no seu HTML)
+    if (btnReenviar) {
+        btnReenviar.addEventListener("click", function (e) {
+            e.preventDefault();
+            reenviarCodigo();
+        });
+    }
+
+    // ==========================================
+    // FUNÇÃO: VALIDAR TOKEN
+    // ==========================================
     async function validarToken() {
         const codigoInput = document.getElementById("codigo");
         const btnSubmit = form.querySelector("button");
@@ -22,11 +35,8 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         const codigo = codigoInput.value.trim();
-        
-        // Recupera o e-mail buscando por qualquer uma das chaves usadas no Login
         const email = localStorage.getItem("emailTemp") || localStorage.getItem("logging_email");
 
-        // Se o e-mail sumiu do navegador, manda de volta para o login logar novamente
         if (!email) {
             alert("Sessão expirada ou inválida. Por favor, faça o login novamente.");
             window.location.href = "index.html";
@@ -59,7 +69,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 throw new Error(data.message || "Código de autenticação inválido ou expirado.");
             }
 
-            // --- CAPTURA E VALIDAÇÃO DO ID ---
             const idEncontrado = data.id || data.empresaId || data.usuarioId;
             
             if (!idEncontrado) {
@@ -67,37 +76,30 @@ document.addEventListener("DOMContentLoaded", function () {
                 throw new Error("Erro de sincronização: O servidor não retornou sua ID de usuário.");
             }
 
-            // --- LIMPEZA DE RESÍDUOS ANTIGOS ---
             localStorage.clear();
             sessionStorage.clear();
 
-            // --- SALVAMENTO BLINDADO (Compatível com todas as suas telas) ---
-            // Salva no formato padrão
             localStorage.setItem("token", data.token);
             localStorage.setItem("empresaId", idEncontrado);
             localStorage.setItem("tipoUsuario", data.tipo);
             localStorage.setItem("userName", data.nome || "Operador");
             localStorage.setItem("userEmail", email);
 
-            // Salva no formato alternativo que o painel de solicitações e o App Android usam
             localStorage.setItem("TOKEN_AUTH", data.token);
             localStorage.setItem("usuario_id", idEncontrado);
             localStorage.setItem("empresaNome", data.nome || "Operador");
 
             console.log("🟢 Chaves de acesso geradas com sucesso no LocalStorage.");
 
-            // --- REDIRECIONAMENTO INTELIGENTE ---
-            // Trata maiúsculas/minúsculas para evitar falha na verificação de tipo
             const tipoTratado = data.tipo ? data.tipo.toUpperCase() : "EMPRESA";
             
-            let destino = "dashboard_empresa.html"; // Destino padrão
+            let destino = "dashboard_empresa.html"; 
             if (tipoTratado === "ADMIN" || tipoTratado === "ADMINISTRADOR") {
                 destino = "dashboard_admin.html";
             } else if (tipoTratado === "CLIENTE") {
                 destino = "dashboard_cliente.html";
             }
 
-            // Feedback de sucesso rápido antes de pular de tela
             btnSubmit.innerHTML = "〈 CONEXÃO ESTABELECIDA 〉";
             btnSubmit.style.boxShadow = "0 0 20px #00ff55";
             btnSubmit.style.color = "#00ff55";
@@ -110,11 +112,75 @@ document.addEventListener("DOMContentLoaded", function () {
             console.error("🚨 FALHA NA AUTENTICAÇÃO DE SEGUNDA ETAPA:", err);
             alert(err.message);
             
-            // Restaura o botão para o estado original caso dê erro para o usuário tentar de novo
             btnSubmit.innerHTML = originalText;
             btnSubmit.disabled = false;
             btnSubmit.style.boxShadow = "";
             btnSubmit.style.color = "";
         }
+    }
+
+    // ==========================================
+    // FUNÇÃO NOVA: REENVIAR CÓDIGO
+    // ==========================================
+    async function reenviarCodigo() {
+        const email = localStorage.getItem("emailTemp") || localStorage.getItem("logging_email");
+
+        if (!email) {
+            alert("Sessão expirada. Por favor, faça o login novamente.");
+            window.location.href = "index.html";
+            return;
+        }
+
+        const originalText = btnReenviar.innerHTML;
+        btnReenviar.innerHTML = "〈 SOLICITANDO NOVO TOKEN... 〉";
+        btnReenviar.disabled = true;
+
+        try {
+            // Caso sua rota no back-end use outro endpoint (ex: /auth/resend ou repita o /auth/login), altere abaixo:
+            const response = await fetch(`${BASE_URL}/auth/reenviar`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || "Erro ao processar reenvio do código.");
+            }
+
+            alert("Novo código de verificação enviado com sucesso para o seu e-mail!");
+            
+            // Inicia cronômetro de 30 segundos para o usuário não floodar a API
+            bloquearBotaoTemporariamente(30, originalText);
+
+        } catch (err) {
+            console.error("🚨 FALHA AO REENVIAR CÓDIGO:", err);
+            alert(err.message);
+            
+            btnReenviar.innerHTML = originalText;
+            btnReenviar.disabled = false;
+        }
+    }
+
+    // Timer de Bloqueio Antibot / Spam
+    function bloquearBotaoTemporariamente(segundos, textoOriginal) {
+        let tempoRestante = segundos;
+        btnReenviar.disabled = true;
+        btnReenviar.style.opacity = "0.6";
+        btnReenviar.style.cursor = "not-allowed";
+
+        const intervalo = setInterval(() => {
+            tempoRestante--;
+            btnReenviar.innerHTML = `AGUARDE ${tempoRestante}s`;
+
+            if (tempoRestante <= 0) {
+                clearInterval(intervalo);
+                btnReenviar.innerHTML = textoOriginal;
+                btnReenviar.disabled = false;
+                btnReenviar.style.opacity = "1";
+                btnReenviar.style.cursor = "pointer";
+            }
+        }, 1000);
     }
 });
