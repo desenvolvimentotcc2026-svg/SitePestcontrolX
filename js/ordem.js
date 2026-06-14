@@ -1,29 +1,27 @@
 document.addEventListener("DOMContentLoaded", function() {
-    // Captura os parâmetros dinâmicos injetados pelo link do Android
     const urlParams = new URLSearchParams(window.location.search);
-    const clienteId = urlParams.get('clienteId') || "34"; // Fallback se testado fora do app
-    const empresaId = urlParams.get('empresaId') || "42";
+    
+    // Captura os dados dinâmicos da URL
+    const clienteId = urlParams.get('clienteId') || ""; 
+    const empresaId = urlParams.get('empresaId') || "";
+    // Recebe e decodifica o nome do cliente!
+    const nomeCliente = urlParams.get('nomeCliente') ? decodeURIComponent(urlParams.get('nomeCliente')) : "";
 
-    // Preenche os inputs travados em modo readonly
+    // Trava e preenche as informações
     document.getElementById("clienteId").value = clienteId;
     document.getElementById("empresaId").value = empresaId;
+    document.getElementById("nomeCliente").value = nomeCliente; // PREENCHIMENTO MÁGICO AUTOMÁTICO
 
-    // Envio do Formulário para a API REST do Spring Boot
     document.getElementById("formOrdem").addEventListener("submit", function(e) {
         e.preventDefault();
 
-        // 🔐 PASSO 1: Resgatar o token JWT que foi salvo no solicitacoes.html
         let token = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || "";
-        
         if (!token) {
-            alert("🚨 ERRO DE SEGURANÇA: Token JWT não encontrado. Volte para o painel principal e insira suas credenciais.");
-            return; // Trava a execução aqui se não tiver token
+            alert("🚨 ERRO: Token JWT ausente na sessão.");
+            return;
         }
-
-        // Limpa formatações indesejadas caso existam
         token = token.replace(/^"|"$/g, '').trim();
 
-        // 📝 PASSO 2: O Payload com as chaves exatas que o seu Spring Boot espera
         const payload = {
             clienteId: parseInt(document.getElementById("clienteId").value),
             empresaId: parseInt(document.getElementById("empresaId").value),
@@ -34,32 +32,25 @@ document.addEventListener("DOMContentLoaded", function() {
             status: "ABERTA"
         };
 
-        // 🚀 PASSO 3: O Fetch com o Header de Autorização
         fetch("https://appdedetizacao.onrender.com/api/ordens", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}` // A MÁGICA ACONTECE AQUI! O "crachá" é apresentado.
+                "Authorization": `Bearer ${token}`
             },
             body: JSON.stringify(payload)
         })
         .then(async response => {
             if(response.ok) {
-                alert("🚀 ORDEM DE SERVIÇO EMITIDA! Banco de dados atualizado com sucesso.");
-                window.close(); // Fecha a aba do formulário após o sucesso
+                alert("🚀 O.S. EMITIDA! Viatura despachada.");
+                window.close(); 
             } else {
-                const erroMsg = await response.text();
-                console.error("Erro do servidor:", erroMsg);
-                alert(`Erro ao emitir ordem (Status ${response.status}). Verifique o console.`);
+                alert(`Erro HTTP: ${response.status}`);
             }
         })
-        .catch(err => {
-            console.error("Erro de conexão/CORS:", err);
-            alert("Falha de rede ao tentar conectar com o Render.");
-        });
+        .catch(err => alert("Falha crítica de rede."));
     });
 
-    // Função para buscar CEP automaticamente (Mantida intacta)
     window.buscarEnderecoPorCEP = function(cep) {
         const cepLimpo = cep.replace(/\D/g, ''); 
         if (cepLimpo.length === 8) {
@@ -71,7 +62,6 @@ document.addEventListener("DOMContentLoaded", function() {
                         document.getElementById("numero").focus(); 
                     }
                 })
-                .catch(err => console.error("Erro na busca de CEP", err));
         }
     };
 });
