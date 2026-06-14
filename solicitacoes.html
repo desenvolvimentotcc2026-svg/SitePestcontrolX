@@ -349,12 +349,16 @@
         renderizarListaFiltrada();
     }
 
-    function visualizarEMontarOrdem(ordem) {
+   function visualizarEMontarOrdem(ordem) {
         const detalheContainer = document.getElementById("visualizador-os-completa");
+        
+        // Pega o ID do cliente da ordem (ou deixa um fallback)
+        const clienteId = ordem.clienteId || ordem.usuarioId || 34;
+
         detalheContainer.innerHTML = `
             <div class="border border-[#3DDC84]/30 bg-[#161b22] p-5 rounded-lg text-white mt-2">
                 <div class="flex justify-between items-center border-b border-gray-800 pb-2 mb-3">
-                    <h2 class="text-xs font-bold text-[#3DDC84]">CONSOLE OPERACIONAL - OS #${ordem.id}</h2>
+                    <h2 class="text-xs font-bold text-[#3DDC84]">CONSOLE OPERACIONAL - REQ #${ordem.id}</h2>
                     <span class="text-[10px] bg-yellow-500/10 text-yellow-500 px-2 py-0.5 rounded border border-yellow-500/20">PENDENTE</span>
                 </div>
                 <div class="flex flex-col gap-2 text-xs">
@@ -362,8 +366,13 @@
                     <p><b class="text-gray-500">Praga-Alvo:</b> <span class="text-red-400 font-bold">${ordem.pragaAlvo || 'Vetor Não Identificado'}</span></p>
                     <p><b class="text-gray-500">Descrição Técnica:</b> ${ordem.descricao || 'Varredura padrão contra pragas.'}</p>
                 </div>
-                <button onclick="aceitarOrdemEmpresa(${ordem.id})" class="mt-4 w-full bg-[#3DDC84] hover:bg-[#32b86e] text-black font-bold py-2 rounded text-xs transition">
-                    ⚡ DESPACHAR EQUIPE EM CAMPO
+                
+                <button onclick="abrirFormularioOrdem(${clienteId})" class="mt-5 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded text-xs transition tracking-wider">
+                    📝 PREENCHER FORMULÁRIO OFICIAL DA O.S.
+                </button>
+
+                <button onclick="aceitarOrdemEmpresa(${ordem.id})" class="mt-2 w-full bg-[#3DDC84] hover:bg-[#32b86e] text-black font-bold py-2 rounded text-xs transition tracking-wider">
+                    ⚡ DESPACHAR EQUIPE EM CAMPO (EXPRESSO)
                 </button>
             </div>`;
         detalheContainer.scrollIntoView({ behavior: 'smooth' });
@@ -389,6 +398,17 @@
         } catch (e) {
             alert("Erro ao despachar Ordem para o banco de dados. Verifique a conexão com o Render.");
         }
+    }
+
+
+    function abrirFormularioOrdem(clienteId) {
+        // Tenta pegar o ID da empresa do storage (se houver login), senão usa o padrão 42
+        const idEmpresa = localStorage.getItem("empresaId") || "42";
+        const idCliente = clienteId || "34"; // Fallback de segurança
+        
+        // Dispara o redirecionamento injetando os parâmetros na URL
+        console.log(`Redirecionando para formulário... Cliente: ${idCliente} | Empresa: ${idEmpresa}`);
+        window.location.href = `form-ordem.html?clienteId=${idCliente}&empresaId=${idEmpresa}`;
     }
 
     function conectarRastreamento(idOrdem) {
