@@ -202,63 +202,66 @@
     }
 
     async function carregarSolicitacoes() {
-        const token = obterTokenLimpo();
-        const container = document.getElementById("lista-solicitacoes");
+    const token = obterTokenLimpo();
+    const container = document.getElementById("lista-solicitacoes");
 
-        // Verifica se o token tem o tamanho mínimo de um JWT real
-        if (!token || token.length < 50) {
-            container.innerHTML = `
-                <div class="text-center py-8 px-4 border border-dashed border-red-500/30 rounded-lg bg-red-500/5">
-                    <p class="text-xs text-red-400 font-bold uppercase mb-1">Acesso Bloqueado</p>
-                    <p class="text-[11px] text-gray-500">Insira um token JWT completo e válido para sincronizar.</p>
-                </div>`;
-            return;
+    // Captura o ID da empresa logada ou usa o padrão de teste
+    const idEmpresa = localStorage.getItem("empresaId") || "42";
+
+    if (!token || token.length < 50) {
+        container.innerHTML = `
+            <div class="text-center py-8 px-4 border border-dashed border-red-500/30 rounded-lg bg-red-500/5">
+                <p class="text-xs text-red-400 font-bold uppercase mb-1">Acesso Bloqueado</p>
+                <p class="text-[11px] text-gray-500">Insira um token JWT completo e válido para sincronizar.</p>
+            </div>`;
+        return;
+    }
+
+    try {
+
+        console.log(`📡 Disparando Fetch para ${API_BASE_URL}/api/ordens/empresa/${idEmpresa}...`);
+        
+        const response = await fetch(`${API_BASE_URL}/api/ordens/empresa/${idEmpresa}`, {
+            method: "GET",
+            mode: 'cors',
+            headers: {
+                "Authorization": `Bearer ${token}`, 
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        });
+        
+        if (!response.ok) {
+            const errorMessage = await response.text();
+            console.error(`❌ Servidor recusou. Status: ${response.status}. Motivo: ${errorMessage}`);
+            
+            if (response.status === 401 || response.status === 403) {
+                throw new Error("TOKEN_RECUSADO");
+            }
+            throw new Error("ERRO_SERVIDOR");
         }
+        
+        listaCompletaOrdens = await response.json();
+        renderizarListaFiltrada();
 
-        try {
-            console.log(`📡 Disparando Fetch para ${API_BASE_URL}/api/ordens...`);
-            
-            const response = await fetch(`${API_BASE_URL}/api/ordens`, {
-                method: "GET",
-                mode: 'cors',
-                headers: {
-                    "Authorization": `Bearer ${token}`, 
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
-                }
-            });
-            
-            if (!response.ok) {
-                const errorMessage = await response.text();
-                console.error(`❌ Servidor recusou. Status: ${response.status}. Motivo: ${errorMessage}`);
-                
-                if (response.status === 401 || response.status === 403) {
-                    throw new Error("TOKEN_RECUSADO");
-                }
-                throw new Error("ERRO_SERVIDOR");
-            }
-            
-            listaCompletaOrdens = await response.json();
-            renderizarListaFiltrada();
-
-        } catch (error) {
-            console.error("🚨 Erro Crítico no Frontend:", error);
-            
-            if(error.message === "TOKEN_RECUSADO") {
-                 container.innerHTML = `
-                 <div class="text-center py-6 border border-dashed border-red-500/30 rounded bg-red-500/5">
-                     <p class="text-xs text-red-400 font-bold uppercase">🚨 401: Token Recusado pelo Servidor</p>
-                     <p class="text-[10px] text-gray-400 mt-2">O seu token é inválido ou expirou. Gere um novo token no Back-End e cole acima.</p>
-                 </div>`;
-            } else {
-                 container.innerHTML = `
-                 <div class="text-center py-6 border border-dashed border-red-500/30 rounded bg-red-500/5">
-                     <p class="text-xs text-red-400 font-bold uppercase">🚨 Falha de Conexão CORS/Network</p>
-                     <p class="text-[10px] text-gray-400 mt-2">Verifique se o seu servidor Render está online e aceitando conexões.</p>
-                 </div>`;
-            }
+    } catch (error) {
+        console.error("🚨 Erro Crítico no Frontend:", error);
+        
+        if(error.message === "TOKEN_RECUSADO") {
+             container.innerHTML = `
+             <div class="text-center py-6 border border-dashed border-red-500/30 rounded bg-red-500/5">
+                 <p class="text-xs text-red-400 font-bold uppercase">🚨 401: Token Recusado pelo Servidor</p>
+                 <p class="text-[10px] text-gray-400 mt-2">O seu token é inválido ou expirou. Gere um novo token no Back-End e cole acima.</p>
+             </div>`;
+        } else {
+             container.innerHTML = `
+             <div class="text-center py-6 border border-dashed border-red-500/30 rounded bg-red-500/5">
+                 <p class="text-xs text-red-400 font-bold uppercase">🚨 Falha de Conexão CORS/Network ou Endpoint Inexistente</p>
+                 <p class="text-[10px] text-gray-400 mt-2">Verifique se o endpoint da empresa está correto e se o servidor Render está ativo.</p>
+             </div>`;
         }
     }
+}
 
     function renderizarListaFiltrada() {
         const container = document.getElementById("lista-solicitacoes");

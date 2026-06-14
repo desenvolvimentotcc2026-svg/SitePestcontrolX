@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById("form-token");
-    const btnReenviar = document.getElementById("btn-reenviar"); // Elemento de reenvio
+    const btnReenviar = document.getElementById("resendBtn"); // CORRIGIDO: Agora bate com o seu HTML
     const BASE_URL = "https://appdedetizacao.onrender.com";
 
     if (!form) {
@@ -8,19 +8,22 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
     }
 
-    // LISTENER 1: Enviar/Validar Token
-    form.addEventListener("submit", function (e) {
-        e.preventDefault();
-        validarToken();
-    });
-
-    // LISTENER 2: Reenviar Código (Se o botão existir no seu HTML)
+    // Inicializa o contador de reenvio assim que a página abre (baseado nos 60s do seu HTML)
     if (btnReenviar) {
+        bloquearBotaoTemporariamente(60, "Reenviar Código");
+        
+        // LISTENER: Reenviar Código
         btnReenviar.addEventListener("click", function (e) {
             e.preventDefault();
             reenviarCodigo();
         });
     }
+
+    // LISTENER: Enviar/Validar Token
+    form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        validarToken();
+    });
 
     // ==========================================
     // FUNÇÃO: VALIDAR TOKEN
@@ -120,7 +123,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // ==========================================
-    // FUNÇÃO NOVA: REENVIAR CÓDIGO
+    // FUNÇÃO: REENVIAR CÓDIGO
     // ==========================================
     async function reenviarCodigo() {
         const email = localStorage.getItem("emailTemp") || localStorage.getItem("logging_email");
@@ -131,12 +134,10 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        const originalText = btnReenviar.innerHTML;
         btnReenviar.innerHTML = "〈 SOLICITANDO NOVO TOKEN... 〉";
         btnReenviar.disabled = true;
 
         try {
-            // Caso sua rota no back-end use outro endpoint (ex: /auth/resend ou repita o /auth/login), altere abaixo:
             const response = await fetch(`${BASE_URL}/auth/reenviar`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -150,36 +151,30 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             alert("Novo código de verificação enviado com sucesso para o seu e-mail!");
-            
-            // Inicia cronômetro de 30 segundos para o usuário não floodar a API
-            bloquearBotaoTemporariamente(30, originalText);
+            bloquearBotaoTemporariamente(60, "Reenviar Código");
 
         } catch (err) {
             console.error("🚨 FALHA AO REENVIAR CÓDIGO:", err);
             alert(err.message);
-            
-            btnReenviar.innerHTML = originalText;
-            btnReenviar.disabled = false;
+            bloquearBotaoTemporariamente(5, "Tentar Novamente");
         }
     }
 
-    // Timer de Bloqueio Antibot / Spam
-    function bloquearBotaoTemporariamente(segundos, textoOriginal) {
+    // Timer de Bloqueio Automático Antibot / Spam
+    function bloquearBotaoTemporariamente(segundos, textoFinal) {
         let tempoRestante = segundos;
         btnReenviar.disabled = true;
-        btnReenviar.style.opacity = "0.6";
-        btnReenviar.style.cursor = "not-allowed";
+        btnReenviar.classList.add("disabled"); // Adiciona classe visual se tiver no CSS
 
         const intervalo = setInterval(() => {
             tempoRestante--;
-            btnReenviar.innerHTML = `AGUARDE ${tempoRestante}s`;
+            btnReenviar.innerHTML = `Reenviar (${tempoRestante}s)`;
 
             if (tempoRestante <= 0) {
                 clearInterval(intervalo);
-                btnReenviar.innerHTML = textoOriginal;
+                btnReenviar.innerHTML = textoFinal;
                 btnReenviar.disabled = false;
-                btnReenviar.style.opacity = "1";
-                btnReenviar.style.cursor = "pointer";
+                btnReenviar.classList.remove("disabled");
             }
         }, 1000);
     }
