@@ -206,13 +206,6 @@
 </head>
 <body>
 
-    <script>
-        // Sincronizador de tema reativo ao dashboard principal
-        if (localStorage.getItem('theme') === 'dark') {
-            document.body.classList.add('dark-theme');
-        }
-    </script>
-
     <div class="header-container">
         <h1 style="font-size: 22px; margin: 0; display: flex; align-items: center; gap: 12px;">
             <i class="fa-solid fa-building-circle-gear" style="color:var(--primary)"></i> Hub do Perfil Institucional (Visão do Cliente)
@@ -254,32 +247,32 @@
         </div>
 
         <div class="tech-card">
-            <h3 style="margin: 0 0 20px 0; font-size: 15px; color: var(--primary); display: flex; align-items: center; gap: 8px; text-transform: uppercase; tracking-wider">
+            <h3 style="margin: 0 0 20px 0; font-size: 15px; color: var(--primary); display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
                 <i class="fa-solid fa-pen-to-square"></i> Editor de Metadados do App móvel
             </h3>
             
-            <form id="formSobre" onsubmit="salvarDadosEmpresa(event)">
+            <form id="formSobre">
                 <div class="form-group">
                     <label for="inputSobre">Descrição Corporativa da Dedetizadora</label>
-                    <textarea id="inputSobre" class="tech-textarea" rows="4" maxlength="600" placeholder="Detalhe suas certificações (Ex: Registrada na ANVISA, químicos com selo verde, atendimento residencial e industrial)..." oninput="sincronizarCampos()"></textarea>
+                    <textarea id="inputSobre" class="tech-textarea" rows="4" maxlength="600" placeholder="Detalhe suas certificações (Ex: Registrada na ANVISA, químicos com selo verde, atendimento residencial e industrial)..."></textarea>
                     <div id="counter" class="char-count">0 / 600 caracteres</div>
                 </div>
 
                 <div class="form-grid-2">
                     <div class="form-group">
                         <label for="inputContatos">Contato de Plantão Operacional</label>
-                        <input type="text" id="inputContatos" class="tech-input" placeholder="(11) 99999-0000" oninput="sincronizarCampos()">
+                        <input type="text" id="inputContatos" class="tech-input" placeholder="(11) 99999-0000">
                     </div>
                     <div class="form-group">
                         <label for="inputFuncionamento">Janela de Atendimento</label>
-                        <input type="text" id="inputFuncionamento" class="tech-input" placeholder="Ex: Seg a Sex das 08h às 22h" oninput="sincronizarCampos()">
+                        <input type="text" id="inputFuncionamento" class="tech-input" placeholder="Ex: Seg a Sex das 08h às 22h">
                     </div>
                 </div>
 
                 <div class="form-grid-2">
                     <div class="form-group">
                         <label for="inputLicencaNum">Registro/Licença Sanitária (ANVISA/CVE)</label>
-                        <input type="text" id="inputLicencaNum" class="tech-input" placeholder="Ex: CEVS 355030801" oninput="sincronizarCampos()">
+                        <input type="text" id="inputLicencaNum" class="tech-input" placeholder="Ex: CEVS 355030801">
                     </div>
                     <div class="form-group">
                         <label for="inputQuimico">Responsável Técnico (CRQ/CRBio)</label>
@@ -290,10 +283,10 @@
                 <div class="form-group">
                     <label>Especialidades Homologadas para Controle</label>
                     <div class="specialty-grid">
-                        <label class="specialty-item"><input type="checkbox" class="chk-spec" value="🪳 Desinsetização" checked onchange="atualizarTagsPreview()"> 🪳 Insetos (Geral)</label>
-                        <label class="specialty-item"><input type="checkbox" class="chk-spec" value="🐀 Desratização" checked onchange="atualizarTagsPreview()"> 🐀 Roedores</label>
-                        <label class="specialty-item"><input type="checkbox" class="chk-spec" value="🪵 Descupinização" onchange="atualizarTagsPreview()"> 🪵 Cupins</label>
-                        <label class="specialty-item"><input type="checkbox" class="chk-spec" value="🚰 Reservatórios" onchange="atualizarTagsPreview()"> 🚰 Caixas d'Água</label>
+                        <label class="specialty-item"><input type="checkbox" class="chk-spec" value="🪳 Desinsetização" checked> 🪳 Insetos (Geral)</label>
+                        <label class="specialty-item"><input type="checkbox" class="chk-spec" value="🐀 Desratização" checked> 🐀 Roedores</label>
+                        <label class="specialty-item"><input type="checkbox" class="chk-spec" value="🪵 Descupinização"> 🪵 Cupins</label>
+                        <label class="specialty-item"><input type="checkbox" class="chk-spec" value="🚰 Reservatórios"> 🚰 Caixas d'Água</label>
                     </div>
                 </div>
 
@@ -309,129 +302,6 @@
         </div>
     </div>
 
-    <script>
-        const API_URL = "https://appdedetizacao.onrender.com";
-        const token = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH");
-        const empresaId = localStorage.getItem("empresaId") || "1";
-
-        // 🔄 Data-Binding Reativo em Tempo Real para o Mockup
-        function sincronizarCampos() {
-            const textoSobre = document.getElementById("inputSobre").value;
-            const funcionamento = document.getElementById("inputFuncionamento").value;
-            const licenca = document.getElementById("inputLicencaNum").value;
-
-            document.getElementById("viewSobre").innerText = textoSobre || "Escreva uma descrição para visualizar o anúncio...";
-            document.getElementById("viewHorario").innerHTML = `<i class="fa-regular fa-clock"></i> ${funcionamento || 'Horário Comercial'}`;
-            
-            const badgeLicenca = document.getElementById("badgeLicenca");
-            if(licenca) {
-                badgeLicenca.innerHTML = `<i class="fa-solid fa-file-shield"></i> ${licenca}`;
-                badgeLicenca.style.display = "inline-block";
-            } else {
-                badgeLicenca.innerHTML = `<i class="fa-solid fa-file-shield"></i> Licenciado`;
-            }
-
-            document.getElementById("counter").innerText = `${textoSobre.length} / 600 caracteres`;
-        }
-
-        function atualizarTagsPreview() {
-            const containerTags = document.getElementById("previewTags");
-            containerTags.innerHTML = "";
-            
-            document.querySelectorAll(".chk-spec:checked").forEach(chk => {
-                const tag = document.createElement("span");
-                tag.style.cssText = "background: var(--bg-global); border: 1px solid var(--border); padding: 3px 8px; border-radius: 6px; font-size: 11px; color: var(--text-main); font-weight: 500;";
-                tag.innerText = chk.value;
-                containerTags.appendChild(tag);
-            });
-        }
-
-        // 📥 GET: Puxa metadados reais do Spring Boot
-        async function carregarDadosEmpresa() {
-            try {
-                const response = await fetch(`${API_URL}/api/empresas/${empresaId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if(response.ok) {
-                    const emp = await response.json();
-                    document.getElementById("viewNome").innerText = emp.nome || "PestControlX Soluções";
-                    document.getElementById("viewCnpj").innerText = "CNPJ: " + (emp.cnpj || "00.000.000/0001-00");
-                    
-                    document.getElementById("inputSobre").value = emp.sobre || "";
-                    document.getElementById("inputFuncionamento").value = localStorage.getItem(`opp_hours_${empresaId}`) || "24h Ativo";
-                    document.getElementById("inputContatos").value = localStorage.getItem(`opp_phone_${empresaId}`) || "(11) 99999-5522";
-                    document.getElementById("inputLicencaNum").value = localStorage.getItem(`opp_licence_${empresaId}`) || "CVE 3550308";
-                    document.getElementById("inputQuimico").value = localStorage.getItem(`opp_chem_${empresaId}`) || "Dr. Arnaldo - CRQ 42K";
-
-                    sincronizarCampos();
-                    atualizarTagsPreview();
-                }
-            } catch (err) {
-                console.error("Erro na comunicação com a API", err);
-                document.getElementById("viewSobre").innerText = "Operando em Modo Offline Local (Cache Ativo).";
-            }
-
-            const welcomeSalva = localStorage.getItem(`welcomeMsg_${empresaId}`) || "Olá! A central PestControlX recebeu seu chamado. A viatura técnica mais próxima já foi alertada.";
-            document.getElementById("inputWelcome").value = welcomeSalva;
-        }
-
-        // 📤 PUT: Envia metadados estruturados para o Backend
-        async function salvarDadosEmpresa(e) {
-            e.preventDefault();
-            const statusLabel = document.getElementById("statusSalvar");
-            statusLabel.innerText = "Sincronizando...";
-            statusLabel.style.color = "orange";
-
-            const textoSobre = document.getElementById("inputSobre").value;
-            const welcomeMsg = document.getElementById("inputWelcome").value;
-
-            try {
-                const response = await fetch(`${API_URL}/api/empresas/${empresaId}`, {
-                    method: 'PUT',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ sobre: textoSobre })
-                });
-
-                if(response.ok) {
-                    // Armazena com segurança metadados operacionais estendidos
-                    localStorage.setItem(`welcomeMsg_${empresaId}`, welcomeMsg);
-                    localStorage.setItem(`opp_hours_${empresaId}`, document.getElementById("inputFuncionamento").value);
-                    localStorage.setItem(`opp_phone_${empresaId}`, document.getElementById("inputContatos").value);
-                    localStorage.setItem(`opp_licence_${empresaId}`, document.getElementById("inputLicencaNum").value);
-                    localStorage.setItem(`opp_chem_${empresaId}`, document.getElementById("inputQuimico").value);
-
-                    statusLabel.innerText = "✓ Sincronizado com Sucesso!";
-                    statusLabel.style.color = "var(--primary)";
-                    sincronizarCampos();
-                } else {
-                    statusLabel.innerText = `Erro HTTP: ${response.status}`;
-                    statusLabel.style.color = "red";
-                }
-            } catch(err) {
-                statusLabel.innerText = "Falha crítica de rede externa.";
-                statusLabel.style.color = "red";
-            }
-        }
-
-        // Inicialização de Gatilhos
-        window.onload = () => {
-            carregarDadosEmpresa();
-            // Verifica se a acessibilidade sensorial está ativa
-            if (localStorage.getItem('sensory_calm') === 'true') {
-                document.body.style.transition = "none";
-            }
-        };
-
-        // Escuta mensagens de atualização de tema dinâmico vindos da janela pai
-        window.addEventListener('message', function(event) {
-            if (event.data && event.data.tipo === 'sincronizarTema') {
-                if(event.data.tema === 'dark') document.body.classList.add('dark-theme');
-                else document.body.classList.remove('dark-theme');
-            }
-        });
-    </script>
+    <script src="js/sobre.js" defer></script>
 </body>
 </html>
