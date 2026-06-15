@@ -3,25 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PestControlX - Cronograma de Ordens</title>
+    <title>PestControlX - Roteamento Tático</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* TEMA CYBER-INDUSTRIAL / NEON */
         :root {
-            --primary: #16a34a;
-            --bg-global: #f8fafc;
-            --surface: #ffffff;
-            --border: #e2e8f0;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-        }
-
-        [data-theme="dark"] {
-            --primary: #22c55e;
-            --bg-global: #0f172a;
-            --surface: #1e293b;
-            --border: #334155;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
+            --primary: #3DDC84;
+            --primary-hover: #2eb369;
+            --bg-global: #f6f6f6;
+            --surface: #161b22;
+            --border: #30363d;
+            --text-main: #c9d1d9;
+            --text-muted: #8b949e;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
@@ -42,44 +35,58 @@
             background: var(--surface);
             padding: 35px;
             border-radius: 12px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 0 20px rgba(61, 220, 132, 0.05);
             border: 1px solid var(--border);
-            text-align: left;
         }
 
-        h1 { font-size: 20px; font-weight: 700; margin-bottom: 8px; color: var(--text-main); }
+        h1 { font-size: 20px; font-weight: 700; margin-bottom: 8px; color: #ffffff; text-transform: uppercase; letter-spacing: 1px;}
         .subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 25px; }
+
+        .badge-info { 
+            background: rgba(61, 220, 132, 0.1); 
+            border: 1px solid rgba(61, 220, 132, 0.3); 
+            padding: 12px; 
+            border-radius: 8px; 
+            margin-bottom: 20px; 
+            font-size: 13px; 
+            color: var(--primary); 
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); }
         
         input, select {
             width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px;
-            background: var(--bg-global); color: var(--text-main); font-size: 14px; outline: none; transition: all 0.2s;
+            background: #010409; color: #ffffff; font-size: 14px; outline: none; transition: all 0.2s;
+            color-scheme: dark;
         }
-        input:focus, select:focus { border-color: var(--primary); }
+        input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(61, 220, 132, 0.2); }
 
         .btn-schedule {
-            width: 100%; padding: 14px; background: var(--primary); color: white;
+            width: 100%; padding: 14px; background: var(--primary); color: #000000;
             border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; transition: 0.2s;
+            margin-top: 10px;
         }
-        .btn-schedule:hover { background: var(--primary-hover); }
-        .badge-info { background: rgba(22, 163, 74, 0.08); border: 1px dashed var(--primary); padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; color: var(--text-main); }
+        .btn-schedule:hover { background: var(--primary-hover); transform: translateY(-2px); }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h1><i class="fa-solid fa-calendar-check" style="color: var(--primary);"></i> Definir Cronograma Técnico</h1>
-        <p class="subtitle">Insira a janela de execução para sincronizar o aplicativo do colaborador de campo.</p>
+        <h1><i class="fa-solid fa-satellite-dish" style="color: var(--primary);"></i> Roteamento Tático</h1>
+        <p class="subtitle">Defina o cronograma e aloque a viatura. O dispositivo do técnico será sincronizado em tempo real.</p>
 
         <div class="badge-info">
-            <i class="fa-solid fa-circle-info"></i> Despachando Ordem de Serviço: <strong id="lblOrdem" style="color: var(--primary);">#...</strong>
+            <i class="fa-solid fa-crosshairs fa-spin"></i>
+            <span>Despachando Ordem de Serviço: <strong id="lblOrdem">#...</strong></span>
         </div>
 
         <form id="formAgenda" onsubmit="confirmarAgendamento(event)">
             <div class="form-group">
-                <label for="dataExecucao">Data Prevista de Execução</label>
+                <label for="dataExecucao">Data Prevista da Operação</label>
                 <input type="date" id="dataExecucao" required>
             </div>
 
@@ -88,64 +95,85 @@
                 <select id="periodo" required>
                     <option value="MANHA">Manhã (08:00 - 12:00)</option>
                     <option value="TARDE" selected>Tarde (13:00 - 18:00)</option>
-                    <option value="NOITE">Noite Noturno (19:00 - 23:00)</option>
+                    <option value="NOITE">Noturno (19:00 - 23:00)</option>
                 </select>
             </div>
 
             <div class="form-group">
-                <label for="tecnicoId">Supervisor de Campo Responsável</label>
+                <label for="tecnicoId">Operador de Campo (Técnico)</label>
                 <select id="tecnicoId" required>
-                    <option value="8">Técnico Rádio #1 (Operacional)</option>
-                    <option value="12">Supervisor Químico #2 (Vigilância)</option>
+                    <option value="1">Técnico Operacional #1 (ID: 1)</option>
+                    <option value="2">Supervisor Químico #2 (ID: 2)</option>
+                    <option value="8">Viatura Rápida #8 (ID: 8)</option>
                 </select>
             </div>
 
-            <button type="submit" id="btnSalvar" class="btn-schedule">Confirmar e Notificar Equipe</button>
+            <button type="submit" id="btnSalvar" class="btn-schedule"><i class="fa-solid fa-bolt"></i> Confirmar Rota e Notificar App</button>
         </form>
     </div>
 
     <script>
-        const ordemId = localStorage.getItem("ordemId") || "99";
-        document.getElementById("lblOrdem").innerText = `OS #${ordemId}`;
+        // 🧠 Captura Dinâmica do ID da Ordem vindo do form-ordem.html
+        const urlParams = new URLSearchParams(window.location.search);
+        const ordemId = urlParams.get('ordemId');
+
+        if (!ordemId) {
+            alert("Erro Crítico: ID da Ordem não identificado na URL.");
+        } else {
+            document.getElementById("lblOrdem").innerText = `#${ordemId}`;
+        }
 
         async function confirmarAgendamento(e) {
             e.preventDefault();
             const btn = document.getElementById("btnSalvar");
             btn.disabled = true;
-            btn.innerText = "Registrando...";
+            btn.innerText = "TRANSMITINDO...";
 
-            const token = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH");
+            let token = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || "";
+            token = token.replace(/^"|"$/g, '').trim();
+
             const dataVal = document.getElementById("dataExecucao").value;
             const turno = document.getElementById("periodo").value;
+            const tecnicoId = document.getElementById("tecnicoId").value; // O ID do técnico!
 
             try {
-                // Sincroniza metadados com a API do Render correspondente ao seu TCC
-                const response = await fetch(`https://appdedetizacao.onrender.com/api/ordens/${ordemId}/agendar`, {
+                // 📡 O endpoint do seu backend precisa aceitar este PUT
+                const response = await fetch(`https://appdedetizacao.onrender.com/api/ordens/${ordemId}/aceitar?funcionarioId=${tecnicoId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
+                    // Caso sua API exija dados no corpo (Body) para o agendamento, envie aqui.
                     body: JSON.stringify({
-                        dataAgendada: dataVal,
-                        turno: turno,
+                        dataAgendamento: dataVal,
                         status: "EM_ANDAMENTO"
                     })
                 });
 
-                alert("🚀 Agendamento homologado! Ordem roteada para o aplicativo móvel do técnico.");
-                window.location.href = "dashboard_empresa.html"; // Retorna para a tela de monitoramento principal
+                if (!response.ok) {
+                    throw new Error(`Falha HTTP: ${response.status}`);
+                }
+
+                alert("🚀 ROTA HOMOLOGADA! O aplicativo do técnico foi sincronizado.");
+                
+                // Fecha a janela avulsa (se foi aberta assim) ou redireciona para a home
+                if (window.opener) {
+                    window.close();
+                } else {
+                    window.location.href = "solicitacoes.html"; 
+                }
 
             } catch (err) {
-                alert("Erro ao salvar agendamento local.");
+                console.error(err);
+                alert("Falha na sincronização com o Render. Verifique o console.");
                 btn.disabled = false;
-                btn.innerText = "Confirmar e Notificar Equipe";
+                btn.innerHTML = "<i class='fa-solid fa-bolt'></i> Tentar Novamente";
             }
         }
 
         window.onload = () => {
-            if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-            // Seta data mínima de agendamento para hoje
+            // Trava datas no passado
             document.getElementById('dataExecucao').min = new Date().toISOString().split("T")[0];
         };
     </script>

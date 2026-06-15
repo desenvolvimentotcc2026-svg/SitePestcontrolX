@@ -42,10 +42,17 @@ document.addEventListener("DOMContentLoaded", function() {
         })
         .then(async response => {
             if(response.ok) {
-                alert("🚀 O.S. EMITIDA! Viatura despachada.");
-                window.close(); 
+                // Captura a resposta do Spring Boot com o ID gerado no banco 
+                const ordemGerada = await response.json(); 
+                
+                alert(" O.S. REGISTRADA! Redirecionando para roteamento da equipe...");
+                
+                //  Passa o ID da nova ordem direto para a URL da agenda!
+                window.location.href = `agenda.html?ordemId=${ordemGerada.id}`; 
             } else {
-                alert(`Erro HTTP: ${response.status}`);
+                const erroMsg = await response.text();
+                console.error("Erro do servidor:", erroMsg);
+                alert(`Erro ao emitir ordem (Status ${response.status}). Verifique o console.`);
             }
         })
         .catch(err => alert("Falha crítica de rede."));
