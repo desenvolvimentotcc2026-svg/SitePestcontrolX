@@ -166,12 +166,12 @@
              container.innerHTML = `
                 <div class="text-center py-8 px-4 border border-dashed border-red-500/30 rounded-lg bg-red-500/5">
                     <p class="text-xs text-red-400 font-bold uppercase mb-2">Sessão Expirada ou Não Iniciada</p>
-                    <p class="text-[10px] text-gray-500">Redirecione o usuário para a tela de Login para autenticar e salvar o ID e Token no sistema.</p>
+                    <p class="text-[10px] text-gray-500">Faça o login novamente para autenticar o sistema.</p>
                 </div>`;
              return;
         }
 
-        container.innerHTML = `<p class="text-sm text-gray-500 animate-pulse text-center py-8">Atualizando dados...</p>`;
+        container.innerHTML = `<p class="text-sm text-gray-500 animate-pulse text-center py-8">Sincronizando com a Central...</p>`;
 
         try {
             const response = await fetch(`${API_BASE_URL}/api/ordens/empresa/${idEmpresa}`, {
@@ -182,16 +182,13 @@
                 }
             });
             
-            if (!response.ok) {
-                if(response.status === 500) {
-                    throw new Error("Erro 500: O Servidor Spring Boot crashou ao tentar buscar as ordens dessa empresa. Olhe o console do Eclipse/IntelliJ.");
-                } else if(response.status === 401 || response.status === 403) {
-                    throw new Error("Token expirado ou inválido. Faça login novamente.");
-                }
-                throw new Error(`Erro desconhecido HTTP ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`Erro HTTP ${response.status}`);
             
-            listaCompletaOrdens = await response.json();
+            const data = await response.json();
+            
+            // 🔥 CORREÇÃO CRÍTICA 1: Lidar com o formato do Spring Boot (Page vs List)
+            listaCompletaOrdens = data.content ? data.content : data;
+            
             atualizarContadores();
             renderizarListaFiltrada();
 
@@ -205,32 +202,12 @@
         }
     }
 
-    function atualizarContadores() {
-        let pendentes = 0, emAndamento = 0;
-        listaCompletaOrdens.forEach(ordem => {
-            const status = (ordem.status || "").toUpperCase();
-            if (status === 'PENDENTE' || status === 'ABERTA') pendentes++;
-            else if (status === 'ACEITO' || status === 'EM_ROTA' || status === 'EM_ANDAMENTO') emAndamento++;
-        });
-        document.getElementById("counter-pendente").innerText = pendentes;
-        document.getElementById("counter-andamento").innerText = emAndamento;
-    }
-
-    function filtrarLista(status) {
-        filtroStatusAtual = status;
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.className = "px-3 py-1.5 rounded bg-[#0d1117] text-gray-400 border border-[#21262d] filter-btn transition";
-        });
-        const btnAtivo = document.getElementById(`filter-${status}`);
-        if(btnAtivo) btnAtivo.className = "px-3 py-1.5 rounded bg-[#21262d] text-white border border-[#3DDC84] filter-btn transition";
-        renderizarListaFiltrada();
-    }
-
     function renderizarListaFiltrada() {
         const container = document.getElementById("lista-solicitacoes");
         container.innerHTML = "";
 
-        if (!listaCompletaOrdens || listaCompletaOrdens.length === 0) {
+        // Prevenção extra caso listaCompletaOrdens não seja um array iterável
+        if (!Array.isArray(listaCompletaOrdens) || listaCompletaOrdens.length === 0) {
             container.innerHTML = `<p class="text-xs text-gray-500 text-center py-8 font-bold tracking-wider uppercase">Nenhuma ordem encontrada</p>`;
             return;
         }
@@ -252,13 +229,26 @@
 
         ordensFiltradas.forEach(ordem => {
             const statusOS = (ordem.status || "PENDENTE").toUpperCase();
-            const nomeClienteReal = ordem.cliente || ordem.nomeCliente || "Cliente Não Registrado";
+            
+            // 🔥 CORREÇÃO CRÍTICA 2: Evitar "[object Object]" se cliente vier aninhado do Java
+            let nomeClienteReal = "Cliente Não Registrado";
+            if (ordem.cliente && typeof ordem.cliente === 'object') {
+                nomeClienteReal = ordem.cliente.nome || "Cliente (Objeto sem nome)";
+            } else {
+                nomeClienteReal = ordem.cliente || ordem.nomeCliente || "Cliente Não Registrado";
+            }
+
+            // Normalizando nomes que o Android pode enviar diferente
+            const praga = ordem.praga || ordem.pragaAlvo || 'Vistoria Geral';
+            const descricao = ordem.descricao || ordem.restricoes || 'N/A';
+
             let statusBadge = '';
             let acaoBtn = '';
 
             if (statusOS === 'PENDENTE' || statusOS === 'ABERTA') {
                 statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">A DESPACHAR</span>`;
-                acaoBtn = `<button onclick='visualizarEMontarOrdem(${JSON.stringify(ordem).replace(/'/g, "\\'")})' class="mt-3 w-full bg-[#21262d] hover:border-yellow-500 border border-[#21262d] text-white font-bold text-[11px] py-2 px-3 rounded transition">🔍 AVALIAR OCORRÊNCIA</button>`;
+                // 🔥 CORREÇÃO CRÍTICA 3: Passar APENAS o ID para não injetar a foto em Base64 no DOM HTML!
+                acaoBtn = `<button onclick="visualizarEMontarOrdem(${ordem.id})" class="mt-3 w-full bg-[#21262d] hover:border-yellow-500 border border-[#21262d] text-white font-bold text-[11px] py-2 px-3 rounded transition">🔍 AVALIAR OCORRÊNCIA</button>`;
             } else {
                 statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-[#3DDC84]/10 text-[#3DDC84] border border-[#3DDC84]/20">EM OPERAÇÃO</span>`;
                 acaoBtn = `<button onclick="conectarRastreamento(${ordem.id})" class="mt-3 w-full bg-[#3DDC84] hover:bg-[#2eb369] text-black font-bold text-[11px] py-2 px-3 rounded transition shadow-[0_0_15px_rgba(61,220,132,0.3)]">🛰️ CONECTAR RADAR</button>`;
@@ -268,11 +258,11 @@
             card.className = `neon-border bg-[#0d1117] p-4 rounded-lg flex flex-col justify-between mb-3`;
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
-                    <span class="text-xs font-bold text-gray-500">REQ #${ordem.id}</span>
+                    <span class="text-xs font-bold text-gray-500">REQ #${ordem.id || '???'}</span>
                     ${statusBadge}
                 </div>
-                <h3 class="text-white font-bold text-sm uppercase">${ordem.pragaAlvo || 'Vistoria Geral'}</h3>
-                <p class="text-xs text-gray-400 mt-1.5"><b class="text-gray-500">Info:</b> ${ordem.descricao || 'N/A'}</p>
+                <h3 class="text-white font-bold text-sm uppercase">${praga}</h3>
+                <p class="text-xs text-gray-400 mt-1.5"><b class="text-gray-500">Info:</b> ${descricao}</p>
                 <p class="text-xs text-gray-400 mt-0.5"><b class="text-gray-500">Alvo:</b> ${nomeClienteReal}</p>
                 ${acaoBtn}
             `;
@@ -280,19 +270,37 @@
         });
     }
 
-    function visualizarEMontarOrdem(ordem) {
+    // A função agora recebe um número (ID) em vez do objeto inteiro
+    function visualizarEMontarOrdem(idOrdem) {
+        // 🔥 Resgata o objeto puro diretamente do array global (Base64 não quebra o HTML)
+        const ordem = listaCompletaOrdens.find(o => o.id === idOrdem);
+        if (!ordem) return;
+
         const detalheContainer = document.getElementById("visualizador-os-completa");
-        const clienteId = ordem.clienteId || 0;
-        const nomeParaUrl = encodeURIComponent(ordem.cliente || ordem.nomeCliente || "Cliente N/A");
+        
+        // Garante que pega o ID correto, mesmo se vier dentro do objeto cliente
+        const clienteId = ordem.clienteId || (ordem.cliente && ordem.cliente.id) || 0;
+        
+        let nomeParaUrl = "Cliente N/A";
+        if (ordem.cliente && typeof ordem.cliente === 'object') {
+            nomeParaUrl = encodeURIComponent(ordem.cliente.nome || "Cliente");
+        } else {
+            nomeParaUrl = encodeURIComponent(ordem.cliente || ordem.nomeCliente || "Cliente N/A");
+        }
+
+        const praga = ordem.praga || ordem.pragaAlvo || 'N/A';
+        const descricao = ordem.descricao || ordem.restricoes || 'N/A';
+        const imagemBase64 = ordem.stringFotoBase64 ? `<img src="data:image/jpeg;base64,${ordem.stringFotoBase64}" class="w-full h-32 object-cover rounded mt-2 border border-[#21262d]">` : '';
 
         detalheContainer.innerHTML = `
             <div class="border border-[#3DDC84]/30 bg-[#161b22] p-5 rounded-lg text-white mt-2 shadow-[0_0_10px_rgba(61,220,132,0.1)]">
                 <h2 class="text-xs font-bold text-[#3DDC84] mb-3 uppercase tracking-widest border-b border-[#21262d] pb-2">Detalhes Operacionais</h2>
                 <div class="flex flex-col gap-2 text-xs mb-5 mt-3">
-                    <p><b class="text-gray-500">Solicitante:</b> ${ordem.cliente || 'N/A'}</p>
-                    <p><b class="text-gray-500">Ameaça Biológica:</b> <span class="text-red-400 font-bold">${ordem.pragaAlvo || 'N/A'}</span></p>
-                    <p><b class="text-gray-500">Relato:</b> ${ordem.descricao || 'N/A'}</p>
+                    <p><b class="text-gray-500">Solicitante:</b> ${decodeURIComponent(nomeParaUrl)}</p>
+                    <p><b class="text-gray-500">Ameaça Biológica:</b> <span class="text-red-400 font-bold">${praga}</span></p>
+                    <p><b class="text-gray-500">Relato:</b> ${descricao}</p>
                     ${ordem.cuidados ? `<p class="bg-yellow-500/10 text-yellow-500 p-2 rounded mt-1 border border-yellow-500/20"><b class="uppercase">⚠️ Atenção Especial:</b> ${ordem.cuidados}</p>` : ''}
+                    ${imagemBase64}
                 </div>
                 
                 <button onclick="abrirFormularioOrdem(${clienteId}, '${nomeParaUrl}')" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded text-xs transition uppercase tracking-wider">
