@@ -182,7 +182,7 @@
         token = token.replace(/^"|"$/g, '');
 
         try {
-            const response = await fetch(`${API_BASE_URL}/funcionarios`, {
+            const response = await fetch(`${API_BASE_URL}/api/funcionarios`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -248,7 +248,7 @@
             email: document.getElementById('tec-tel').value + "@tecnico.com"
         };
 
-        const url = id ? `${API_BASE_URL}/funcionarios/${id}` : `${API_BASE_URL}/funcionarios?empresa_id=${EMPRESA_ID}`;
+        const url = id ? `${API_BASE_URL}/api/funcionarios/${id}` : `${API_BASE_URL}/api/funcionarios?empresa_id=${EMPRESA_ID}`;
         const metodo = id ? 'PUT' : 'POST';
 
         // Pega o token limpo (igual você fez no painel de ordens)
@@ -294,7 +294,7 @@
             token = token.replace(/^"|"$/g, '');
 
             try {
-                const response = await fetch(`${API_BASE_URL}/funcionarios/${id}`, { 
+                const response = await fetch(`${API_BASE_URL}/api/funcionarios/${id}`, { 
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
