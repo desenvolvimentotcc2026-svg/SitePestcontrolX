@@ -171,8 +171,9 @@
     // 🔗 DADOS DA API E SESSÃO
     const API_BASE_URL = "https://appdedetizacao.onrender.com";
     
-    // ID da empresa vindo da sessão ou fallback de testes
-    const EMPRESA_ID = localStorage.getItem("empresaId") || 42; 
+    // ⚠️ ATENÇÃO: Verifique se este ID de empresa (ex: 28 ou 42) realmente existe no seu banco de dados atual!
+    // Se não existir, o Spring Boot vai retornar 404 propositalmente.
+    const EMPRESA_ID = localStorage.getItem("empresaId") || 28; 
     let equipe = [];
 
     // Função auxiliar para obter e limpar o token de autenticação
@@ -195,7 +196,7 @@
                 
                 // Filtra os funcionários garantindo que pertençam apenas à empresa atual
                 equipe = todosFuncionarios.filter(tec => 
-                    tec.empresaId == EMPRESA_ID || 
+                    tec.empresa_id == EMPRESA_ID || 
                     (tec.empresa && tec.empresa.id == EMPRESA_ID)
                 );
                 
@@ -223,11 +224,11 @@
             let statusClass = (status === 'ativo' || status === 'online') ? 'status-ativo' : status === 'campo' ? 'status-campo' : 'status-inativo';
             let statusText = (status === 'ativo' || status === 'online') ? 'Disponível' : status === 'campo' ? 'Em Rota' : 'Offline / Férias';
 
-            // Correção crucial: passando apenas tec.id no onclick para evitar quebras de aspas no HTML
+            // Correção visual: mostrando "cargo" em vez de especialidade (já que o backend usa cargo)
             tbody.innerHTML += `
                 <tr>
                     <td><strong>${tec.nome}</strong></td>
-                    <td>${tec.especialidade || 'Dedetização Geral'}</td>
+                    <td>${tec.cargo || 'Dedetização Geral'}</td>
                     <td>${tec.telefone || tec.email}</td>
                     <td><span class="status-badge ${statusClass}">${statusText}</span></td>
                     <td>
@@ -261,19 +262,19 @@
         const id = document.getElementById('tec-id').value;
         const telefoneForm = document.getElementById('tec-tel').value;
         
-        // Localiza dados do técnico caso seja uma edição para não perder campos cruciais
         const tecnicoExistente = id ? equipe.find(t => t.id == id) : null;
 
+        // 🟢 CORREÇÃO APLICADA AQUI: cargo, ativo e cpf injetados para casar com o FuncionarioDto do Backend
         const payload = {
             nome: document.getElementById('tec-nome').value,
-            especialidade: document.getElementById('tec-espec').value,
+            cargo: document.getElementById('tec-espec').value, 
             telefone: telefoneForm,
             status: document.getElementById('tec-status').value.toUpperCase(),
-            // Preserva o e-mail se já existir, senão gera um padrão baseado no telefone
+            ativo: true, 
+            cpf: "00000000000", 
             email: tecnicoExistente ? tecnicoExistente.email : (telefoneForm.replace(/\D/g, '') + "@tecnico.com")
         };
 
-        // Alinhamento das rotas do backend com parâmetros corretos (?empresa_id=)
         const url = id ? `${API_BASE_URL}/api/funcionarios/${id}` : `${API_BASE_URL}/api/funcionarios?empresa_id=${EMPRESA_ID}`;
         const metodo = id ? 'PUT' : 'POST';
         const token = obterToken();
@@ -296,7 +297,8 @@
                     alert("Sua sessão expirou ou você não tem permissão. Faça login novamente.");
                 } else {
                     const errorMsg = await response.text();
-                    alert(`Erro do Servidor (${response.status}): ${errorMsg || 'Falha ao salvar operador.'}`);
+                    // Se der erro 404 aqui, significa que a EMPRESA_ID não existe no banco de dados!
+                    alert(`Erro do Servidor (${response.status}): ${errorMsg || 'Verifique se o ID da Empresa existe no banco de dados.'}`);
                 }
             }
         } catch (error) {
@@ -312,7 +314,7 @@
 
         document.getElementById('tec-id').value = tec.id;
         document.getElementById('tec-nome').value = tec.nome;
-        document.getElementById('tec-espec').value = tec.especialidade || "";
+        document.getElementById('tec-espec').value = tec.cargo || "";
         document.getElementById('tec-tel').value = tec.telefone || "";
         document.getElementById('tec-status').value = tec.status ? tec.status.toLowerCase() : "inativo";
 
