@@ -330,9 +330,19 @@
                     const tokenGerado = data.token || data.token_usuario || data.accessToken;
                     if (!tokenGerado) throw new Error("Erro crítico: Chave JWT ausente.");
 
-                    let idEncontrado = data.idEmpresa || data.id || data.empresaId || data.usuarioId;
-                    if (!idEncontrado && data.usuario) idEncontrado = data.usuario.id;
-                    if (!idEncontrado && data.empresa) idEncontrado = data.empresa.id;
+                   // ✅ NOVA LÓGICA: Caça primeiro o ID da Empresa, não importa o quão fundo ele esteja no JSON.
+                    let idEncontrado = null;
+
+                    if (data.empresa && data.empresa.id) {
+                    idEncontrado = data.empresa.id; 
+                    } else if (data.usuario && data.usuario.empresa && data.usuario.empresa.id) {
+                    idEncontrado = data.usuario.empresa.id;
+                    } else {
+                    // Se for uma conta antiga solta, tenta pegar as chaves diretas
+                    idEncontrado = data.idEmpresa || data.empresaId || data.id || data.usuarioId;
+                    }
+
+                    if (!idEncontrado) throw new Error("Erro de sincronização com ID corporativo.");
                     
                     if (!idEncontrado) throw new Error("Erro de sincronização com ID corporativo.");
 
