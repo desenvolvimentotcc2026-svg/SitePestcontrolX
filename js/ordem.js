@@ -1,10 +1,10 @@
 document.addEventListener("DOMContentLoaded", function() {
     const urlParams = new URLSearchParams(window.location.search);
     
-    // Captura os dados dinâmicos da URL, incluindo o ordemId resgatado!
+    // Captura os dados dinâmicos da URL
     const clienteId = urlParams.get('clienteId') || "0"; 
     const empresaId = urlParams.get('empresaId') || "0";
-    const ordemId = urlParams.get('ordemId'); // 🔥 Recuperado aqui
+    const ordemId = urlParams.get('ordemId'); 
     const nomeCliente = urlParams.get('nomeCliente') ? decodeURIComponent(urlParams.get('nomeCliente')) : "";
 
     document.getElementById("clienteId").value = clienteId;
@@ -67,12 +67,20 @@ document.addEventListener("DOMContentLoaded", function() {
 
         let token = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || "";
         if (!token) {
-            alert("🚨 ERRO: Token JWT ausente na sessão. Volte ao dashboard.");
+            // POP-UP PREMIUM: Erro de Autenticação
+            Swal.fire({
+                icon: 'warning',
+                title: 'Acesso Negado',
+                text: 'Token JWT ausente na sessão. Volte ao dashboard para fazer login novamente.',
+                confirmButtonColor: '#2E7D32'
+            });
+            btn.innerHTML = "SALVAR ORDEM";
             btn.disabled = false;
             return;
         }
         token = token.replace(/^"|"$/g, '').trim();
 
+        // PAYLOAD COMPLETO: Pronto para a Agenda do Técnico (App e Web)
         const payload = {
             clienteId: parseInt(document.getElementById("clienteId").value),
             empresaId: parseInt(document.getElementById("empresaId").value),
@@ -83,16 +91,15 @@ document.addEventListener("DOMContentLoaded", function() {
             restricoes: document.getElementById("restricoes").value,
             cuidados: document.getElementById("cuidados").value,
             stringFotoBase64: fotoBase64,
-            status: "ABERTA"
+            status: "ABERTA" // Status crucial para aparecer na lista de pendências da Agenda
         };
 
-        // 🔥 Inteligência de Rota: Decide entre Criar Clone ou Atualizar a Ordem Existente
         let endpoint = "https://appdedetizacao.onrender.com/api/ordens";
         let metodoHttp = "POST";
 
         if (ordemId) {
             endpoint = `https://appdedetizacao.onrender.com/api/ordens/${ordemId}`;
-            metodoHttp = "PUT";
+            metodoHttp = "PUT"; // Requer o @PutMapping configurado no Spring Boot!
         }
 
         fetch(endpoint, {
@@ -105,30 +112,63 @@ document.addEventListener("DOMContentLoaded", function() {
         })
         .then(async response => {
             if(response.ok) {
-                // Se for POST, o JSON retorna o objeto criado. Se for PUT, mantemos o ID conhecido.
                 let idParaAgenda = ordemId;
                 if (metodoHttp === "POST") {
                     const ordemGerada = await response.json(); 
                     idParaAgenda = ordemGerada.id;
                 }
                 
-                alert("✅ O.S. REGISTRADA E ATUALIZADA COM SUCESSO! Iniciando roteamento da equipe...");
-                window.location.href = `agenda.html?ordemId=${idParaAgenda}`; 
+                // POP-UP PREMIUM: Sucesso e Redirecionamento Automático
+                Swal.fire({
+                    icon: 'success',
+                    title: 'O.S. Registrada!',
+                    text: 'Iniciando roteamento da equipe...',
+                    showConfirmButton: false,
+                    timer: 2500,
+                    timerProgressBar: true,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                }).then(() => {
+                    // Envia com as informações cruciais para a tela de agenda
+                    window.location.href = `agenda.html?ordemId=${idParaAgenda}&status=ABERTA&empresaId=${payload.empresaId}`; 
+                });
+
             } else {
                 const erroMsg = await response.text();
                 console.error("Erro do servidor:", erroMsg);
-                alert(`Erro ao processar a ordem (Status ${response.status}).`);
+                
+                let textoErro = `Erro ao processar a ordem (Status ${response.status}).`;
+                if (response.status === 405) {
+                    textoErro = "Método não permitido (Erro 405). O servidor não suporta a edição desta O.S. no momento.";
+                }
+
+                // POP-UP PREMIUM: Erro do Servidor
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Falha no Servidor',
+                    text: textoErro,
+                    confirmButtonColor: '#d33'
+                });
+
                 btn.innerHTML = "<i class='fa-solid fa-satellite-dish'></i> TENTAR NOVAMENTE";
                 btn.disabled = false;
             }
         })
         .catch(err => {
-            alert("Falha crítica de rede externa.");
+            // POP-UP PREMIUM: Erro de Rede / Internet
+            Swal.fire({
+                icon: 'error',
+                title: 'Sem Conexão',
+                text: 'Falha crítica de rede externa. Verifique sua internet.',
+                confirmButtonColor: '#d33'
+            });
             btn.innerHTML = "<i class='fa-solid fa-satellite-dish'></i> TENTAR NOVAMENTE";
             btn.disabled = false;
         });
     });
 
+    // Função de CEP mantida intacta
     window.buscarEnderecoPorCEP = function(cep) {
         const cepLimpo = cep.replace(/\D/g, ''); 
         if (cepLimpo.length === 8) {

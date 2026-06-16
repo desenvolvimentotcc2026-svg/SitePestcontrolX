@@ -71,6 +71,56 @@
             margin-top: 10px;
         }
         .btn-schedule:hover { background: var(--primary-hover); transform: translateY(-2px); }
+
+        /* Estilização dos Popups Customizados (Modals) */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        
+        .modal-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 420px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-box { transform: scale(1); }
+        
+        .modal-icon { font-size: 42px; margin-bottom: 15px; }
+        .modal-box h3 { color: #ffffff; font-size: 18px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .modal-box p { color: var(--text-main); font-size: 14px; line-height: 1.5; margin-bottom: 22px; }
+        
+        .modal-btn {
+            padding: 10px 24px; background: var(--primary); color: #000000;
+            border: none; border-radius: 6px; font-weight: 700; text-transform: uppercase;
+            font-size: 12px; cursor: pointer; letter-spacing: 0.5px; transition: background 0.2s;
+        }
+        .modal-btn:hover { background: var(--primary-hover); }
+
+        /* Estados do Pop-up baseados no contexto */
+        .modal-success { border-color: var(--primary); box-shadow: 0 0 15px rgba(61, 220, 132, 0.2); }
+        .modal-success .modal-icon { color: var(--primary); }
+        
+        .modal-error { border-color: #ff4a4a; box-shadow: 0 0 15px rgba(255, 74, 74, 0.2); }
+        .modal-error .modal-icon { color: #ff4a4a; }
+        
+        .modal-warning { border-color: #ffaa00; box-shadow: 0 0 15px rgba(255, 170, 0, 0.2); }
+        .modal-warning .modal-icon { color: #ffaa00; }
     </style>
 </head>
 <body>
@@ -102,26 +152,66 @@
             <div class="form-group">
                 <label for="tecnicoId">Operador de Campo (Técnico)</label>
                 <select id="tecnicoId" required>
-                    <option value="1">Técnico Operacional #1 (ID: 1)</option>
-                    <option value="2">Supervisor Químico #2 (ID: 2)</option>
-                    <option value="8">Viatura Rápida #8 (ID: 8)</option>
+                    <option value="" disabled selected>Carregando técnicos...</option>
                 </select>
             </div>
 
             <button type="submit" id="btnSalvar" class="btn-schedule"><i class="fa-solid fa-bolt"></i> Confirmar Rota e Notificar App</button>
         </form>
     </div>
+
+    <div id="customModal" class="modal-overlay">
+        <div class="modal-box">
+            <div id="modalIcon" class="modal-icon"></div>
+            <h3 id="modalTitle">Título</h3>
+            <p id="modalMessage">Mensagem informativa.</p>
+            <button id="modalBtn" class="modal-btn">OK</button>
+        </div>
+    </div>
+
 <script>
     const urlParams = new URLSearchParams(window.location.search);
     const ordemId = urlParams.get('ordemId');
 
+    // Função centralizadora para exibir os pop-ups premium
+    function exibirPopup(titulo, mensagem, tipo = 'success', callback = null) {
+        const modal = document.getElementById("customModal");
+        const modalBox = modal.querySelector(".modal-box");
+        const iconDiv = document.getElementById("modalIcon");
+        
+        document.getElementById("modalTitle").innerText = titulo;
+        document.getElementById("modalMessage").innerText = mensagem;
+        
+        // Remove classes antigas
+        modalBox.className = "modal-box";
+        
+        // Aplica o comportamento do tema com base no tipo
+        if (tipo === 'success') {
+            modalBox.classList.add("modal-success");
+            iconDiv.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+        } else if (tipo === 'error') {
+            modalBox.classList.add("modal-error");
+            iconDiv.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
+        } else if (tipo === 'warning') {
+            modalBox.classList.add("modal-warning");
+            iconDiv.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+        }
+        
+        modal.classList.add("active");
+        
+        // Configura a ação de fechamento e o callback opcional
+        document.getElementById("modalBtn").onclick = function() {
+            modal.classList.remove("active");
+            if (callback) callback();
+        };
+    }
+
     if (!ordemId) {
-        alert("Erro Crítico: ID da Ordem não identificado na URL.");
+        exibirPopup("Erro Crítico", "ID da Ordem de Serviço não foi identificado na URL de roteamento.", "error");
     } else {
         document.getElementById("lblOrdem").innerText = `#${ordemId}`;
     }
 
-    // 🔥 NOVA FUNÇÃO: Busca dinâmica de Técnicos
     async function carregarTecnicosDisponiveis() {
         let token = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || "";
         token = token.replace(/^"|"$/g, '').trim();
@@ -149,11 +239,11 @@
                     selectTecnico.appendChild(option);
                 });
             } else {
-                selectTecnico.innerHTML = '<option value="" disabled>Erro ao carregar técnicos</option>';
+                selectTecnico.innerHTML = '<option value="" disabled>Erro ao carregar frota de técnicos</option>';
             }
         } catch (error) {
             console.error("Falha ao puxar técnicos:", error);
-            selectTecnico.innerHTML = '<option value="" disabled>Falha de conexão com a base</option>';
+            selectTecnico.innerHTML = '<option value="" disabled>Falha de conexão com a base corporativa</option>';
         }
     }
 
@@ -171,9 +261,9 @@
         const tecnicoId = document.getElementById("tecnicoId").value;
 
         if (!tecnicoId) {
-            alert("Selecione um técnico para o despacho!");
+            exibirPopup("Aviso de Sistema", "Por favor, selecione um operador de campo para realizar o despacho tático!", "warning");
             btn.disabled = false;
-            btn.innerHTML = "<i class='fa-solid fa-satellite-dish'></i> DISPARAR ORDEM PARA O APLICATIVO";
+            btn.innerHTML = "<i class='fa-solid fa-bolt'></i> Confirmar Rota e Notificar App";
             return;
         }
 
@@ -195,19 +285,19 @@
                 throw new Error(`Falha HTTP: ${response.status}`);
             }
 
-            alert("🚀 ROTA HOMOLOGADA! O aplicativo do técnico foi sincronizado.");
-            
-            if (window.opener) {
-                window.close();
-            } else {
-                window.location.href = "solicitacoes.html"; 
-            }
+            exibirPopup("🚀 ROTA HOMOLOGADA!", "O plano operacional foi enviado. O aplicativo móvel do técnico foi sincronizado em tempo real.", "success", () => {
+                if (window.opener) {
+                    window.close();
+                } else {
+                    window.location.href = "solicitacoes.html"; 
+                }
+            });
 
         } catch (err) {
             console.error(err);
-            alert("Falha na sincronização com o Render. Verifique o console do navegador.");
+            exibirPopup("Falha de Comunicação", "Não foi possível sincronizar as rotas com o servidor remoto da nuvem.", "error");
             btn.disabled = false;
-            btn.innerHTML = "<i class='fa-solid fa-satellite-dish'></i> Tentar Novamente";
+            btn.innerHTML = "<i class='fa-solid fa-bolt'></i> Tentar Novamente";
         }
     }
 
@@ -216,7 +306,7 @@
         if (inputData) {
             inputData.min = new Date().toISOString().split("T")[0];
         }
-        carregarTecnicosDisponiveis(); // Executa o carregamento da frota de técnicos ao abrir a tela
+        carregarTecnicosDisponiveis();
     };
 </script>
 </body>
