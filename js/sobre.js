@@ -22,6 +22,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const inputLicencaNum = document.getElementById("inputLicencaNum");
     const inputQuimico = document.getElementById("inputQuimico");
     const inputWelcome = document.getElementById("inputWelcome");
+    const inputChaveCorporativa = document.getElementById("inputChaveCorporativa"); // 🔐 Nova captura
+    const btnToggleChave = document.getElementById("btnToggleChave"); // 👁️ Botão do olhinho
     const checkboxesEspecialidades = document.querySelectorAll(".chk-spec");
 
     // Captura de Elementos do Preview Mobile
@@ -32,7 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const counterLabel = document.getElementById("counter");
     const statusLabel = document.getElementById("statusSalvar");
 
-    // Atribuição de Eventos Reativos em Tempo Real (Substituindo os inline)
+    // Atribuição de Eventos Reativos em Tempo Real
     inputSobre.addEventListener("input", sincronizarCampos);
     inputFuncionamento.addEventListener("input", sincronizarCampos);
     inputLicencaNum.addEventListener("input", sincronizarCampos);
@@ -42,6 +44,24 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     formSobre.addEventListener("submit", salvarDadosEmpresa);
+
+    // ==========================================
+    // 👁️ FUNCIONALIDADE: MOSTRAR/OCULTAR CHAVE
+    // ==========================================
+    if (btnToggleChave && inputChaveCorporativa) {
+        btnToggleChave.addEventListener('click', function() {
+            const icone = this.querySelector('i');
+            if (inputChaveCorporativa.type === 'password') {
+                inputChaveCorporativa.type = 'text'; // Mostra a chave
+                icone.classList.remove('fa-eye');
+                icone.classList.add('fa-eye-slash');
+            } else {
+                inputChaveCorporativa.type = 'password'; // Esconde a chave
+                icone.classList.remove('fa-eye-slash');
+                icone.classList.add('fa-eye');
+            }
+        });
+    }
 
     // Inicialização da página
     carregarDadosEmpresa();
@@ -90,7 +110,6 @@ document.addEventListener("DOMContentLoaded", () => {
      */
     async function carregarDadosEmpresa() {
         try {
-            // Chamada para a rota inteligente /perfil
             const response = await fetch(`${API_URL}/api/empresas/perfil`, {
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -109,6 +128,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 inputLicencaNum.value = emp.licencaSanitaria || "";
                 inputQuimico.value = emp.responsavelTecnico || "";
                 inputWelcome.value = emp.mensagemAutomatica || "";
+                
+                // 🔐 CARREGA A CHAVE CORPORATIVA
+                if (emp.chaveCorporativa && inputChaveCorporativa) {
+                    inputChaveCorporativa.value = emp.chaveCorporativa;
+                }
 
                 // Restaura o estado das especialidades salvas
                 if (emp.especialidades && Array.isArray(emp.especialidades)) {
@@ -148,6 +172,7 @@ document.addEventListener("DOMContentLoaded", () => {
             licencaSanitaria: inputLicencaNum.value,
             responsavelTecnico: inputQuimico.value,
             mensagemAutomatica: inputWelcome.value,
+            chaveCorporativa: inputChaveCorporativa ? inputChaveCorporativa.value.trim() : "", // 🔐 SALVA A CHAVE NO BANCO
             especialidades: especialidadesSelecionadas
         };
 
@@ -165,6 +190,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 statusLabel.innerText = "✓ Sincronizado no Render com sucesso!";
                 statusLabel.style.color = "var(--primary)";
                 sincronizarCampos();
+                
+                // Retorna o status ao normal após 3 segundos
+                setTimeout(() => {
+                    statusLabel.innerText = "";
+                }, 3000);
             } else {
                 statusLabel.innerText = `Erro ${response.status}: Falha na validação do Perfil no Servidor.`;
                 statusLabel.style.color = "red";
