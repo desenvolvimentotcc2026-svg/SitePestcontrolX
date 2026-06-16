@@ -1,17 +1,16 @@
 document.addEventListener("DOMContentLoaded", function() {
     const urlParams = new URLSearchParams(window.location.search);
     
-    // Captura os dados dinâmicos da URL
+    // Captura os dados dinâmicos da URL, incluindo o ordemId resgatado!
     const clienteId = urlParams.get('clienteId') || "0"; 
     const empresaId = urlParams.get('empresaId') || "0";
+    const ordemId = urlParams.get('ordemId'); // 🔥 Recuperado aqui
     const nomeCliente = urlParams.get('nomeCliente') ? decodeURIComponent(urlParams.get('nomeCliente')) : "";
 
-    // Preenche as informações na tela
     document.getElementById("clienteId").value = clienteId;
     document.getElementById("empresaId").value = empresaId;
     if(nomeCliente) document.getElementById("nomeCliente").value = nomeCliente;
 
-    // Lógica da Imagem (Converte para Base64)
     let fotoBase64 = null;
     document.getElementById('fotoUpload').addEventListener('change', function(e) {
         const file = e.target.files[0];
@@ -19,14 +18,12 @@ document.addEventListener("DOMContentLoaded", function() {
             document.getElementById('nomeArquivo').innerText = `✅ Arquivo anexado: ${file.name}`;
             const reader = new FileReader();
             reader.onloadend = () => {
-                // Pega só a string base64 limpa, tirando o cabeçalho 'data:image/jpeg;base64,'
                 fotoBase64 = reader.result.split(',')[1]; 
             };
             reader.readAsDataURL(file);
         }
     });
 
-    // Lógica do PestBot Reativo!
     document.getElementById('pragaAlvo').addEventListener('change', function(e) {
         const botMsg = document.getElementById('pestbot-msg');
         let recomendacao = "";
@@ -62,7 +59,6 @@ document.addEventListener("DOMContentLoaded", function() {
         `;
     });
 
-    // Submissão do Formulário para a API
     document.getElementById("formOrdem").addEventListener("submit", function(e) {
         e.preventDefault();
         const btn = document.getElementById("btnSalvar");
@@ -77,7 +73,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
         token = token.replace(/^"|"$/g, '').trim();
 
-        // Monta o Payload Profissional com todos os campos novos
         const payload = {
             clienteId: parseInt(document.getElementById("clienteId").value),
             empresaId: parseInt(document.getElementById("empresaId").value),
@@ -87,12 +82,21 @@ document.addEventListener("DOMContentLoaded", function() {
             descricao: document.getElementById("descricao").value,
             restricoes: document.getElementById("restricoes").value,
             cuidados: document.getElementById("cuidados").value,
-            stringFotoBase64: fotoBase64, // A imagem vai aqui!
+            stringFotoBase64: fotoBase64,
             status: "ABERTA"
         };
 
-        fetch("https://appdedetizacao.onrender.com/api/ordens", {
-            method: "POST",
+        // 🔥 Inteligência de Rota: Decide entre Criar Clone ou Atualizar a Ordem Existente
+        let endpoint = "https://appdedetizacao.onrender.com/api/ordens";
+        let metodoHttp = "POST";
+
+        if (ordemId) {
+            endpoint = `https://appdedetizacao.onrender.com/api/ordens/${ordemId}`;
+            metodoHttp = "PUT";
+        }
+
+        fetch(endpoint, {
+            method: metodoHttp,
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${token}`
@@ -101,14 +105,19 @@ document.addEventListener("DOMContentLoaded", function() {
         })
         .then(async response => {
             if(response.ok) {
-                const ordemGerada = await response.json(); 
-                alert("✅ O.S. REGISTRADA COM SUCESSO! Iniciando roteamento da equipe...");
-                // Passa o bastão para a Agenda com o ID real!
-                window.location.href = `agenda.html?ordemId=${ordemGerada.id}`; 
+                // Se for POST, o JSON retorna o objeto criado. Se for PUT, mantemos o ID conhecido.
+                let idParaAgenda = ordemId;
+                if (metodoHttp === "POST") {
+                    const ordemGerada = await response.json(); 
+                    idParaAgenda = ordemGerada.id;
+                }
+                
+                alert("✅ O.S. REGISTRADA E ATUALIZADA COM SUCESSO! Iniciando roteamento da equipe...");
+                window.location.href = `agenda.html?ordemId=${idParaAgenda}`; 
             } else {
                 const erroMsg = await response.text();
                 console.error("Erro do servidor:", erroMsg);
-                alert(`Erro ao emitir ordem (Status ${response.status}).`);
+                alert(`Erro ao processar a ordem (Status ${response.status}).`);
                 btn.innerHTML = "<i class='fa-solid fa-satellite-dish'></i> TENTAR NOVAMENTE";
                 btn.disabled = false;
             }
@@ -120,7 +129,6 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 
-    // Sistema de CEP Automático
     window.buscarEnderecoPorCEP = function(cep) {
         const cepLimpo = cep.replace(/\D/g, ''); 
         if (cepLimpo.length === 8) {

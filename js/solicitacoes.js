@@ -1,11 +1,11 @@
 const API_BASE_URL = "https://appdedetizacao.onrender.com";
 let map, currentMarker, stompClient = null;
+let notificationClient = null;
 let listaCompletaOrdens = [];
 let filtroStatusAtual = 'TODAS';
 let routePath = null; 
 let routeCoordinates = [];
 
-// 🗺️ 1. Proteção de Inicialização do Mapa
 function initMap() {
     console.log("🗺️ [MAPA] Inicializando contêiner do Leaflet...");
     try {
@@ -26,7 +26,6 @@ function initMap() {
     }
 }
 
-// 🔑 2. Resgate Seguro do Token (Tratamento para JWT)
 function obterTokenAutomatico() {
     let tokenBruto = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || "";
     if (!tokenBruto) return null;
@@ -38,7 +37,6 @@ function obterTokenAutomatico() {
     return tokenBruto;
 }
 
-// 📊 3. Sincronização de Estatísticas UI
 function atualizarContadores() {
     if (!Array.isArray(listaCompletaOrdens)) return;
 
@@ -58,7 +56,6 @@ function atualizarContadores() {
     if (elAndamento) elAndamento.innerText = andamento;
 }
 
-// 🎯 4. Sistema de Filtragem em Tela
 function filtrarLista(status) {
     filtroStatusAtual = status;
 
@@ -76,36 +73,26 @@ function filtrarLista(status) {
     renderizarListaFiltrada();
 }
 
-// 📡 5. O CÉREBRO CORRIGIDO: Carrega estritamente as solicitações da empresa logada
 async function carregarSolicitacoes() {
     const token = obterTokenAutomatico();
     const container = document.getElementById("lista-solicitacoes");
     
     if (!container) return;
-
     if (!token) {
          container.innerHTML = `<div class="text-center py-8 text-red-400 text-xs font-bold">Sessão Expirada ou Não Iniciada. Faça o login.</div>`;
          return;
     }
 
-    // Resgata e limpa o ID da empresa logada
     let idEmpresaBruto = localStorage.getItem("empresaId") || "";
     const idEmpresa = idEmpresaBruto.replace(/^"|"$/g, '').trim(); 
 
-    // 🔥 CORREÇÃO CRÍTICA: Se não houver empresa identificada, barra a execução para evitar vazamento ou erro 500
     if (!idEmpresa || idEmpresa === "null" || idEmpresa === "0") {
-        console.error("🚨 [BLOQUEIO] Tentativa de carregar dados sem um empresaId válido no localStorage.");
         container.innerHTML = `<div class="text-center py-8 text-yellow-500 text-xs font-bold">⚠️ Conta de Empresa não identificada. Por favor, refaça o login.</div>`;
         return;
     }
 
-    container.innerHTML = `<p class="text-sm text-gray-500 animate-pulse text-center py-8">Sincronizando Solicitações da Empresa...</p>`;
-
     try {
-        // Alvo estrito: Busca apenas as ordens da empresa logada
         const endpointUrl = `${API_BASE_URL}/api/ordens/empresa/${idEmpresa}`;
-        console.log(`🌐 [FETCH CORRIGIDO] Buscando solicitações para a Empresa ID: ${idEmpresa}`);
-
         const response = await fetch(endpointUrl, {
             method: "GET",
             headers: {
@@ -114,28 +101,39 @@ async function carregarSolicitacoes() {
             }
         });
         
-        if (!response.ok) {
-            if (response.status === 403 || response.status === 401) {
-                throw new Error("Acesso negado. Token expirado ou sem permissão.");
-            }
-            throw new Error(`Erro no servidor remoto (Código HTTP: ${response.status})`);
-        }
+        if (!response.ok) throw new Error(`Erro no servidor remoto (Código HTTP: ${response.status})`);
 
         const data = await response.json();
-        
-        // Mapeia os dados aceitando tanto arrays puros quanto paginações do Spring (.content)
         listaCompletaOrdens = data.content ? data.content : data;
         
         atualizarContadores();
         renderizarListaFiltrada();
 
     } catch (error) {
-        console.error("🚨 [FALHA NO SUCESSO DO CARREGAMENTO]:", error);
         container.innerHTML = `<div class="text-center py-6 text-red-400 text-xs font-bold">Falha ao puxar dados da empresa: ${error.message}</div>`;
     }
 }
 
-// 🖌️ 6. Renderização da Lista (Protegida contra Null Pointers do Java)
+function conectarCanalNotificacoesGerais() {
+    const token = obterTokenAutomatico();
+    let idEmpresaBruto = localStorage.getItem("empresaId") || "";
+    const idEmpresa = idEmpresaBruto.replace(/^"|"$/g, '').trim();
+
+    if (!idEmpresa || idEmpresa === "null" || idEmpresa === "0" || !token) return;
+
+    const socket = new SockJS(`${API_BASE_URL}/ws-pestcontrol-sockjs`);
+    notificationClient = Stomp.over(socket);
+    notificationClient.debug = null; 
+
+    notificationClient.connect({ "Authorization": `Bearer ${token}` }, function (frame) {
+        notificationClient.subscribe(`/topic/empresa/${idEmpresa}`, function (response) {
+            carregarSolicitacoes(); 
+        });
+    }, function (error) {
+        console.error("🚨 [WS NOTIFICAÇÃO] Falha na conexão de segundo plano:", error);
+    });
+}
+
 function renderizarListaFiltrada() {
     const container = document.getElementById("lista-solicitacoes");
     if (!container) return;
@@ -161,7 +159,6 @@ function renderizarListaFiltrada() {
         return;
     }
 
-    // Ordenação (Mais novas primeiro)
     ordensFiltradas.sort((a, b) => b.id - a.id);
 
     ordensFiltradas.forEach((ordem) => {
@@ -204,7 +201,6 @@ function renderizarListaFiltrada() {
     });
 }
 
-// 📋 7. Detalhamento Dinâmico Lateral
 function visualizarEMontarOrdem(idOrdem) {
     const ordem = listaCompletaOrdens.find(o => o.id === idOrdem);
     if (!ordem) return;
@@ -238,14 +234,13 @@ function visualizarEMontarOrdem(idOrdem) {
                 ${imagemBase64}
             </div>
             
-            <button onclick="abrirFormularioOrdem(${clienteIdParaEnvio}, '${nomeParaUrl}')" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded text-xs transition uppercase tracking-wider">
+            <button onclick="abrirFormularioOrdem(${clienteIdParaEnvio}, '${nomeParaUrl}', ${ordem.id})" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded text-xs transition uppercase tracking-wider">
                 ⚡ Despachar Equipe Técnico
             </button>
         </div>`;
 }
 
-// 🔥 CORREÇÃO EXTRA: Garante que o formulário de despacho use estritamente a ID correta da empresa sem brechas
-function abrirFormularioOrdem(clienteId, nomeCodificado) {
+window.abrirFormularioOrdem = function(clienteId, nomeCodificado, ordemId) {
     const idEmpresaBruto = localStorage.getItem("empresaId") || "";
     const idEmpresa = idEmpresaBruto.replace(/^"|"$/g, '').trim();
     
@@ -254,11 +249,11 @@ function abrirFormularioOrdem(clienteId, nomeCodificado) {
         return;
     }
     
-    const url = `form-ordem.html?clienteId=${clienteId}&empresaId=${idEmpresa}&nomeCliente=${nomeCodificado}`;
+    // 🔥 INJETANDO O ID DA ORDEM NA URL
+    const url = `form-ordem.html?clienteId=${clienteId}&empresaId=${idEmpresa}&nomeCliente=${nomeCodificado}&ordemId=${ordemId}`;
     window.location.href = url;
 }
 
-// 🛰️ 8. Integração Radar Stomp
 function conectarRastreamento(idOrdem) {
     const trackingEl = document.getElementById("os-tracking-id");
     if (trackingEl) trackingEl.innerText = `[ OS #${idOrdem} ]`;
@@ -321,8 +316,8 @@ function atualizarPosicaoMapa(lat, lng, idOrdem) {
     map.flyTo(coordenadas, 16, { animate: true, duration: 1.0 });
 }
 
-// Gatilho Principal
 window.onload = () => {
     initMap(); 
     carregarSolicitacoes(); 
+    conectarCanalNotificacoesGerais(); 
 };

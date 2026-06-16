@@ -111,72 +111,113 @@
             <button type="submit" id="btnSalvar" class="btn-schedule"><i class="fa-solid fa-bolt"></i> Confirmar Rota e Notificar App</button>
         </form>
     </div>
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const ordemId = urlParams.get('ordemId');
 
- <script>
-        // 🧠 Captura Dinâmica do ID da Ordem vindo do form-ordem.html
-        const urlParams = new URLSearchParams(window.location.search);
-        const ordemId = urlParams.get('ordemId');
+    if (!ordemId) {
+        alert("Erro Crítico: ID da Ordem não identificado na URL.");
+    } else {
+        document.getElementById("lblOrdem").innerText = `#${ordemId}`;
+    }
 
-        if (!ordemId) {
-            alert("Erro Crítico: ID da Ordem não identificado na URL.");
-        } else {
-            document.getElementById("lblOrdem").innerText = `#${ordemId}`;
-        }
+    // 🔥 NOVA FUNÇÃO: Busca dinâmica de Técnicos
+    async function carregarTecnicosDisponiveis() {
+        let token = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || "";
+        token = token.replace(/^"|"$/g, '').trim();
 
-        async function confirmarAgendamento(e) {
-            e.preventDefault();
-            const btn = document.getElementById("btnSalvar");
-            btn.disabled = true;
-            btn.innerText = "TRANSMITINDO...";
+        const idEmpresa = localStorage.getItem("empresaId")?.replace(/^"|"$/g, '').trim();
+        const selectTecnico = document.getElementById("tecnicoId");
 
-            let token = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || "";
-            token = token.replace(/^"|"$/g, '').trim();
+        if (!idEmpresa || !selectTecnico) return;
 
-            const dataRaw = document.getElementById("dataExecucao").value; // Retorna AAAA-MM-DD
-            const turno = document.getElementById("periodo").value;
-            const tecnicoId = document.getElementById("tecnicoId").value;
+        try {
+            const url = `https://appdedetizacao.onrender.com/api/funcionarios/empresa/${idEmpresa}`;
+            const response = await fetch(url, {
+                method: "GET",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
 
-            // 🔥 CORREÇÃO 1: Converter AAAA-MM-DD para dd/MM/AAAA para bater com o Android
-            const [ano, mes, dia] = dataRaw.split("-");
-            const dataFormatada = `${dia}/${mes}/${ano}`; 
-
-            try {
-                // 🔥 CORREÇÃO 2: Passar as informações na URL (Query Params), já que o Back-end segue o padrão do Retrofit
-                // Se o seu backend aceitar a data e o status por parâmetro, a URL correta deve ser esta:
-                const url = `https://appdedetizacao.onrender.com/api/ordens/${ordemId}/aceitar?funcionarioId=${tecnicoId}&data=${dataFormatada}&status=EM_ANDAMENTO`;
-
-                const response = await fetch(url, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Falha HTTP: ${response.status}`);
-                }
-
-                alert("🚀 ROTA HOMOLOGADA! O aplicativo do técnico foi sincronizado.");
+            if (response.ok) {
+                const tecnicos = await response.json();
+                selectTecnico.innerHTML = '<option value="" disabled selected>Selecione um Agente...</option>';
                 
-                if (window.opener) {
-                    window.close();
-                } else {
-                    window.location.href = "solicitacoes.html"; 
-                }
-
-            } catch (err) {
-                console.error(err);
-                alert("Falha na sincronização com o Render. Verifique o console do navegador.");
-                btn.disabled = false;
-                btn.innerHTML = "<i class='fa-solid fa-bolt'></i> Tentar Novamente";
+                tecnicos.forEach(tec => {
+                    const option = document.createElement("option");
+                    option.value = tec.id;
+                    option.text = `${tec.nome} - Rádio: ${tec.telefone || 'N/A'}`;
+                    selectTecnico.appendChild(option);
+                });
+            } else {
+                selectTecnico.innerHTML = '<option value="" disabled>Erro ao carregar técnicos</option>';
             }
+        } catch (error) {
+            console.error("Falha ao puxar técnicos:", error);
+            selectTecnico.innerHTML = '<option value="" disabled>Falha de conexão com a base</option>';
+        }
+    }
+
+    async function confirmarAgendamento(e) {
+        e.preventDefault();
+        const btn = document.getElementById("btnSalvar");
+        btn.disabled = true;
+        btn.innerText = "TRANSMITINDO...";
+
+        let token = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || "";
+        token = token.replace(/^"|"$/g, '').trim();
+
+        const dataRaw = document.getElementById("dataExecucao").value; 
+        const turno = document.getElementById("periodo").value;
+        const tecnicoId = document.getElementById("tecnicoId").value;
+
+        if (!tecnicoId) {
+            alert("Selecione um técnico para o despacho!");
+            btn.disabled = false;
+            btn.innerHTML = "<i class='fa-solid fa-satellite-dish'></i> DISPARAR ORDEM PARA O APLICATIVO";
+            return;
         }
 
-        window.onload = () => {
-            // Trava datas no passado
-            document.getElementById('dataExecucao').min = new Date().toISOString().split("T")[0];
-        };
-    </script>
+        const [ano, mes, dia] = dataRaw.split("-");
+        const dataFormatada = `${dia}/${mes}/${ano}`; 
+
+        try {
+            const url = `https://appdedetizacao.onrender.com/api/ordens/${ordemId}/aceitar?funcionarioId=${tecnicoId}&data=${dataFormatada}&status=EM_ANDAMENTO`;
+
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Falha HTTP: ${response.status}`);
+            }
+
+            alert("🚀 ROTA HOMOLOGADA! O aplicativo do técnico foi sincronizado.");
+            
+            if (window.opener) {
+                window.close();
+            } else {
+                window.location.href = "solicitacoes.html"; 
+            }
+
+        } catch (err) {
+            console.error(err);
+            alert("Falha na sincronização com o Render. Verifique o console do navegador.");
+            btn.disabled = false;
+            btn.innerHTML = "<i class='fa-solid fa-satellite-dish'></i> Tentar Novamente";
+        }
+    }
+
+    window.onload = () => {
+        const inputData = document.getElementById('dataExecucao');
+        if (inputData) {
+            inputData.min = new Date().toISOString().split("T")[0];
+        }
+        carregarTecnicosDisponiveis(); // Executa o carregamento da frota de técnicos ao abrir a tela
+    };
+</script>
 </body>
 </html>
