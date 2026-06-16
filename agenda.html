@@ -209,30 +209,48 @@
     if (!ordemId) {
         exibirPopup("Erro Crítico", "ID da Ordem de Serviço não foi identificado na URL de roteamento.", "error");
     } else {
-        document.getElementById("lblOrdem").innerText = `#${ordemId}`;
+        document.getElementById("lblOrdem").innerHTML = `#${ordemId}`;
     }
 
     async function carregarTecnicosDisponiveis() {
         let token = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || "";
         token = token.replace(/^"|"$/g, '').trim();
 
-        const idEmpresa = localStorage.getItem("empresaId")?.replace(/^"|"$/g, '').trim();
+        // 🟢 Puxa o ID da empresa da mesma forma segura que fizemos no equipe.html
+        const idEmpresaRaw = localStorage.getItem("empresaId") || localStorage.getItem("id_empresa") || "";
+        const idEmpresa = idEmpresaRaw.toString().replace(/^"|"$/g, '').trim();
         const selectTecnico = document.getElementById("tecnicoId");
 
-        if (!idEmpresa || !selectTecnico) return;
+        if (!idEmpresa || !selectTecnico) {
+            if(selectTecnico) selectTecnico.innerHTML = '<option value="" disabled>Erro: Sessão inválida. Refaça o login.</option>';
+            return;
+        }
 
         try {
-            const url = `https://appdedetizacao.onrender.com/api/funcionarios/empresa/${idEmpresa}`;
+            // 🟢 Usando a rota geral que sabemos que funciona perfeitamente
+            const url = `https://appdedetizacao.onrender.com/api/funcionarios`;
             const response = await fetch(url, {
                 method: "GET",
                 headers: { "Authorization": `Bearer ${token}` }
             });
 
             if (response.ok) {
-                const tecnicos = await response.json();
+                const todosFuncionarios = await response.json();
+                
+                // 🟢 Filtramos os técnicos garantindo que pertençam apenas à empresa atual
+                const tecnicosDaEmpresa = todosFuncionarios.filter(tec => 
+                    tec.empresa_id == idEmpresa || 
+                    (tec.empresa && tec.empresa.id == idEmpresa)
+                );
+
                 selectTecnico.innerHTML = '<option value="" disabled selected>Selecione um Agente...</option>';
                 
-                tecnicos.forEach(tec => {
+                if (tecnicosDaEmpresa.length === 0) {
+                    selectTecnico.innerHTML = '<option value="" disabled>Nenhum técnico cadastrado na base.</option>';
+                    return;
+                }
+
+                tecnicosDaEmpresa.forEach(tec => {
                     const option = document.createElement("option");
                     option.value = tec.id;
                     option.text = `${tec.nome} - Rádio: ${tec.telefone || 'N/A'}`;
