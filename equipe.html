@@ -161,20 +161,29 @@
         </div>
     </div>
 <script>
-    // Sincronização Automática com o barramento do Painel Pai (Light/Dark Mode)
+    // 🔄 Sincronização Automática com o barramento do Painel Pai (Light/Dark Mode e Contexto da Empresa)
     window.addEventListener('message', (event) => {
-        if (event.data && event.data.tipo === 'sincronizarTema') {
-            document.body.className = event.data.tema === 'dark' ? 'dark-theme' : '';
+        if (event.data) {
+            if (event.data.tipo === 'sincronizarTema') {
+                document.body.className = event.data.tema === 'dark' ? 'dark-theme' : '';
+            }
+            // Se o painel pai injetar o ID da empresa dinamicamente via postMessage, guardamos na sessão
+            if (event.data.tipo === 'definirEmpresa' && event.data.empresaId) {
+                localStorage.setItem("empresaId", event.data.empresaId);
+                carregarEquipeDaAPI();
+            }
         }
     });
 
     // 🔗 DADOS DA API E SESSÃO
     const API_BASE_URL = "https://appdedetizacao.onrender.com";
-    
-    // ⚠️ ATENÇÃO: Verifique se este ID de empresa (ex: 28 ou 42) realmente existe no seu banco de dados atual!
-    // Se não existir, o Spring Boot vai retornar 404 propositalmente.
-    const EMPRESA_ID = localStorage.getItem("empresaId") || 3; 
     let equipe = [];
+
+    // ⚡ CAPTURA DINÂMICA: Retorna o ID da empresa ativa na sessão atual (sem travar valores fixos)
+    function obterEmpresaId() {
+        let id = localStorage.getItem("empresaId") || localStorage.getItem("id_empresa") || "";
+        return id.toString().replace(/^"|"$/g, '').trim();
+    }
 
     // Função auxiliar para obter e limpar o token de autenticação
     function obterToken() {
@@ -185,6 +194,15 @@
     // LER: Busca técnicos do banco de dados e filtra pela empresa logada
     async function carregarEquipeDaAPI() {
         const token = obterToken();
+        const empresaId = obterEmpresaId();
+
+        // Salvaguarda: impede requisições cegas se o usuário perdeu a sessão
+        if (!empresaId) {
+            console.warn("ID da empresa ausente no localStorage.");
+            const tbody = document.getElementById("tabela-equipe");
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#ef4444; padding:30px;">⚠️ Identificação da empresa não localizada. Por favor, refaça o login no sistema.</td></tr>`;
+            return;
+        }
 
         try {
             const response = await fetch(`${API_BASE_URL}/api/funcionarios`, {
@@ -194,10 +212,10 @@
             if (response.ok) {
                 const todosFuncionarios = await response.json();
                 
-                // Filtra os funcionários garantindo que pertençam apenas à empresa atual
+                // Filtra os funcionários garantindo correspondência dinâmica com a empresa logada
                 equipe = todosFuncionarios.filter(tec => 
-                    tec.empresa_id == EMPRESA_ID || 
-                    (tec.empresa && tec.empresa.id == EMPRESA_ID)
+                    tec.empresa_id == empresaId || 
+                    (tec.empresa && tec.empresa.id == empresaId)
                 );
                 
                 renderizarEquipe();
@@ -224,7 +242,6 @@
             let statusClass = (status === 'ativo' || status === 'online') ? 'status-ativo' : status === 'campo' ? 'status-campo' : 'status-inativo';
             let statusText = (status === 'ativo' || status === 'online') ? 'Disponível' : status === 'campo' ? 'Em Rota' : 'Offline / Férias';
 
-            // Correção visual: mostrando "cargo" em vez de especialidade (já que o backend usa cargo)
             tbody.innerHTML += `
                 <tr>
                     <td><strong>${tec.nome}</strong></td>
@@ -261,10 +278,16 @@
 
         const id = document.getElementById('tec-id').value;
         const telefoneForm = document.getElementById('tec-tel').value;
+        const empresaId = obterEmpresaId();
+
+        // Validação de segurança no Front para evitar disparar 404 no Spring Boot
+        if (!empresaId) {
+            alert("Erro crítico: Não foi possível identificar a sua empresa na sessão. Faça login novamente.");
+            return;
+        }
         
         const tecnicoExistente = id ? equipe.find(t => t.id == id) : null;
 
-        // 🟢 CORREÇÃO APLICADA AQUI: cargo, ativo e cpf injetados para casar com o FuncionarioDto do Backend
         const payload = {
             nome: document.getElementById('tec-nome').value,
             cargo: document.getElementById('tec-espec').value, 
@@ -275,7 +298,8 @@
             email: tecnicoExistente ? tecnicoExistente.email : (telefoneForm.replace(/\D/g, '') + "@tecnico.com")
         };
 
-        const url = id ? `${API_BASE_URL}/api/funcionarios/${id}` : `${API_BASE_URL}/api/funcionarios?empresa_id=${EMPRESA_ID}`;
+        // Montagem dinâmica da URL injetando o ID extraído da sessão logada
+        const url = id ? `${API_BASE_URL}/api/funcionarios/${id}` : `${API_BASE_URL}/api/funcionarios?empresa_id=${empresaId}`;
         const metodo = id ? 'PUT' : 'POST';
         const token = obterToken();
 
@@ -297,8 +321,7 @@
                     alert("Sua sessão expirou ou você não tem permissão. Faça login novamente.");
                 } else {
                     const errorMsg = await response.text();
-                    // Se der erro 404 aqui, significa que a EMPRESA_ID não existe no banco de dados!
-                    alert(`Erro do Servidor (${response.status}): ${errorMsg || 'Verifique se o ID da Empresa existe no banco de dados.'}`);
+                    alert(`Erro do Servidor (${response.status}): ${errorMsg || 'Erro na validação dos dados com o banco.'}`);
                 }
             }
         } catch (error) {
