@@ -76,7 +76,7 @@ function filtrarLista(status) {
     renderizarListaFiltrada();
 }
 
-// 📡 5. O CÉREBRO: Fetch Seguro com Fallback para Geral
+// 📡 5. O CÉREBRO CORRIGIDO: Carrega estritamente as solicitações da empresa logada
 async function carregarSolicitacoes() {
     const token = obterTokenAutomatico();
     const container = document.getElementById("lista-solicitacoes");
@@ -84,26 +84,27 @@ async function carregarSolicitacoes() {
     if (!container) return;
 
     if (!token) {
-         container.innerHTML = `<div class="text-center py-8 text-red-400 text-xs">Sessão Expirada ou Não Iniciada. Faça o login.</div>`;
+         container.innerHTML = `<div class="text-center py-8 text-red-400 text-xs font-bold">Sessão Expirada ou Não Iniciada. Faça o login.</div>`;
          return;
     }
 
-    container.innerHTML = `<p class="text-sm text-gray-500 animate-pulse text-center py-8">Sincronizando Ordens do Backend...</p>`;
+    // Resgata e limpa o ID da empresa logada
+    let idEmpresaBruto = localStorage.getItem("empresaId") || "";
+    const idEmpresa = idEmpresaBruto.replace(/^"|"$/g, '').trim(); 
+
+    // 🔥 CORREÇÃO CRÍTICA: Se não houver empresa identificada, barra a execução para evitar vazamento ou erro 500
+    if (!idEmpresa || idEmpresa === "null" || idEmpresa === "0") {
+        console.error("🚨 [BLOQUEIO] Tentativa de carregar dados sem um empresaId válido no localStorage.");
+        container.innerHTML = `<div class="text-center py-8 text-yellow-500 text-xs font-bold">⚠️ Conta de Empresa não identificada. Por favor, refaça o login.</div>`;
+        return;
+    }
+
+    container.innerHTML = `<p class="text-sm text-gray-500 animate-pulse text-center py-8">Sincronizando Solicitações da Empresa...</p>`;
 
     try {
-        let idEmpresaBruto = localStorage.getItem("empresaId") || "";
-        const idEmpresa = idEmpresaBruto.replace(/^"|"$/g, '').trim(); 
-        
-        let endpointUrl;
-        
-        // ESTRATÉGIA BLINDADA: Se não tem ID de empresa salvo, puxa a rota master (todas as ordens)
-        if (idEmpresa && idEmpresa !== "null" && idEmpresa !== "0") {
-            endpointUrl = `${API_BASE_URL}/api/ordens/empresa/${idEmpresa}`;
-            console.log(`🌐 [FETCH] Rota Empresa ID ${idEmpresa}`);
-        } else {
-            endpointUrl = `${API_BASE_URL}/api/ordens`;
-            console.log(`🌐 [FETCH] Rota MASTER (Todas as Ordens) - Aviso: Rota Empresa evitada.`);
-        }
+        // Alvo estrito: Busca apenas as ordens da empresa logada
+        const endpointUrl = `${API_BASE_URL}/api/ordens/empresa/${idEmpresa}`;
+        console.log(`🌐 [FETCH CORRIGIDO] Buscando solicitações para a Empresa ID: ${idEmpresa}`);
 
         const response = await fetch(endpointUrl, {
             method: "GET",
@@ -114,27 +115,23 @@ async function carregarSolicitacoes() {
         });
         
         if (!response.ok) {
-            // Se falhar o filtro por empresa, tenta a geral (Fail-over)
-            console.warn(`A Rota específica falhou. Código HTTP: ${response.status}. Tentando rota Master...`);
-            const fallbackResponse = await fetch(`${API_BASE_URL}/api/ordens`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-            
-            if(!fallbackResponse.ok) throw new Error("Acesso Negado ou Falha 500 no Spring Boot.");
-            
-            const dataFallback = await fallbackResponse.json();
-            listaCompletaOrdens = dataFallback.content ? dataFallback.content : dataFallback;
-        } else {
-            const data = await response.json();
-            // Suporte automático para JSON Array puro ou Spring Pageable
-            listaCompletaOrdens = data.content ? data.content : data;
+            if (response.status === 403 || response.status === 401) {
+                throw new Error("Acesso negado. Token expirado ou sem permissão.");
+            }
+            throw new Error(`Erro no servidor remoto (Código HTTP: ${response.status})`);
         }
+
+        const data = await response.json();
+        
+        // Mapeia os dados aceitando tanto arrays puros quanto paginações do Spring (.content)
+        listaCompletaOrdens = data.content ? data.content : data;
         
         atualizarContadores();
         renderizarListaFiltrada();
 
     } catch (error) {
-        container.innerHTML = `<div class="text-center py-6 text-red-400 text-xs font-bold">Falha Crítica ao puxar dados: ${error.message}</div>`;
+        console.error("🚨 [FALHA NO SUCESSO DO CARREGAMENTO]:", error);
+        container.innerHTML = `<div class="text-center py-6 text-red-400 text-xs font-bold">Falha ao puxar dados da empresa: ${error.message}</div>`;
     }
 }
 
@@ -145,7 +142,7 @@ function renderizarListaFiltrada() {
     container.innerHTML = "";
 
     if (!Array.isArray(listaCompletaOrdens) || listaCompletaOrdens.length === 0) {
-        container.innerHTML = `<p class="text-xs text-gray-500 text-center py-8 font-bold">Nenhuma ordem de serviço foi encontrada.</p>`;
+        container.innerHTML = `<p class="text-xs text-gray-500 text-center py-8 font-bold">Nenhuma solicitação de serviço pendente para a sua empresa.</p>`;
         return;
     }
 
@@ -160,7 +157,7 @@ function renderizarListaFiltrada() {
     }
 
     if (ordensFiltradas.length === 0) {
-        container.innerHTML = `<p class="text-xs text-gray-500 text-center py-8">Vazio para este filtro.</p>`;
+        container.innerHTML = `<p class="text-xs text-gray-500 text-center py-8">Nenhum registro encontrado para este filtro.</p>`;
         return;
     }
 
@@ -242,16 +239,22 @@ function visualizarEMontarOrdem(idOrdem) {
             </div>
             
             <button onclick="abrirFormularioOrdem(${clienteIdParaEnvio}, '${nomeParaUrl}')" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded text-xs transition uppercase tracking-wider">
-                ⚡ Despachar Equipe Técnica
+                ⚡ Despachar Equipe Técnico
             </button>
         </div>`;
 }
 
+// 🔥 CORREÇÃO EXTRA: Garante que o formulário de despacho use estritamente a ID correta da empresa sem brechas
 function abrirFormularioOrdem(clienteId, nomeCodificado) {
     const idEmpresaBruto = localStorage.getItem("empresaId") || "";
     const idEmpresa = idEmpresaBruto.replace(/^"|"$/g, '').trim();
-    // Previne falha total caso a ID da empresa falhe
-    const url = `form-ordem.html?clienteId=${clienteId}&empresaId=${idEmpresa || 0}&nomeCliente=${nomeCodificado}`;
+    
+    if (!idEmpresa || idEmpresa === "null" || idEmpresa === "0") {
+        alert("Erro crítico: Código identificador da Empresa ausente. Faça login novamente.");
+        return;
+    }
+    
+    const url = `form-ordem.html?clienteId=${clienteId}&empresaId=${idEmpresa}&nomeCliente=${nomeCodificado}`;
     window.location.href = url;
 }
 
@@ -266,7 +269,7 @@ function conectarRastreamento(idOrdem) {
     if (stompClient && stompClient.connected) {
         stompClient.disconnect(() => abrirCanalWebSocket(idOrdem));
     } else {
-        abrirCanalWebSocket(idOrdem);
+         abrirCanalWebSocket(idOrdem);
     }
 }
 
