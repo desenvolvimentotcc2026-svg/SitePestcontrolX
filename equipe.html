@@ -160,8 +160,7 @@
             </form>
         </div>
     </div>
-
-    <script>
+<script>
     // Sincronização Automática com o barramento do Painel Pai (Light/Dark Mode)
     window.addEventListener('message', (event) => {
         if (event.data && event.data.tipo === 'sincronizarTema') {
@@ -172,29 +171,44 @@
     // 🔗 DADOS DA API E SESSÃO
     const API_BASE_URL = "https://appdedetizacao.onrender.com";
     
-    // Na vida real, este ID vem do login da empresa. Para testar, fixe o ID da sua empresa de teste aqui:
+    // ID da empresa vindo da sessão ou fallback de testes
     const EMPRESA_ID = localStorage.getItem("empresaId") || 42; 
     let equipe = [];
 
-    // LER: Busca técnicos do banco de dados
-    async function carregarEquipeDaAPI() {
+    // Função auxiliar para obter e limpar o token de autenticação
+    function obterToken() {
         let token = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || "";
-        token = token.replace(/^"|"$/g, '');
+        return token.replace(/^"|"$/g, '');
+    }
+
+    // LER: Busca técnicos do banco de dados e filtra pela empresa logada
+    async function carregarEquipeDaAPI() {
+        const token = obterToken();
 
         try {
             const response = await fetch(`${API_BASE_URL}/api/funcionarios`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            
             if (response.ok) {
                 const todosFuncionarios = await response.json();
-                equipe = todosFuncionarios;
+                
+                // Filtra os funcionários garantindo que pertençam apenas à empresa atual
+                equipe = todosFuncionarios.filter(tec => 
+                    tec.empresaId == EMPRESA_ID || 
+                    (tec.empresa && tec.empresa.id == EMPRESA_ID)
+                );
+                
                 renderizarEquipe();
+            } else {
+                console.error("Erro ao carregar funcionários do servidor:", response.status);
             }
         } catch (error) {
-            console.error("Erro ao buscar equipe:", error);
+            console.error("Erro na rede ao buscar equipe:", error);
         }
     }
 
+    // RENDERIZAR: Atualiza de forma segura a tabela na tela
     function renderizarEquipe() {
         const tbody = document.getElementById("tabela-equipe");
         tbody.innerHTML = "";
@@ -206,9 +220,10 @@
 
         equipe.forEach(tec => {
             const status = tec.status ? tec.status.toLowerCase() : 'inativo';
-            let statusClass = status === 'ativo' || status === 'online' ? 'status-ativo' : status === 'campo' ? 'status-campo' : 'status-inativo';
-            let statusText = status === 'ativo' || status === 'online' ? 'Disponível' : status === 'campo' ? 'Em Rota' : 'Offline / Férias';
+            let statusClass = (status === 'ativo' || status === 'online') ? 'status-ativo' : status === 'campo' ? 'status-campo' : 'status-inativo';
+            let statusText = (status === 'ativo' || status === 'online') ? 'Disponível' : status === 'campo' ? 'Em Rota' : 'Offline / Férias';
 
+            // Correção crucial: passando apenas tec.id no onclick para evitar quebras de aspas no HTML
             tbody.innerHTML += `
                 <tr>
                     <td><strong>${tec.nome}</strong></td>
@@ -216,8 +231,12 @@
                     <td>${tec.telefone || tec.email}</td>
                     <td><span class="status-badge ${statusClass}">${statusText}</span></td>
                     <td>
-                        <button class="actions-btn" onclick='editarTecnico(${JSON.stringify(tec).replace(/'/g, "\\'")})' title="Editar"><i class="fa-solid fa-pen"></i></button>
-                        <button class="actions-btn btn-del" onclick="deletarTecnico(${tec.id})" title="Excluir"><i class="fa-solid fa-trash-can"></i></button>
+                        <button class="actions-btn" onclick="editarTecnico(${tec.id})" title="Editar">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button class="actions-btn btn-del" onclick="deletarTecnico(${tec.id})" title="Excluir">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
                     </td>
                 </tr>
             `;
@@ -235,32 +254,36 @@
         document.getElementById('modalTecnico').classList.remove('active');
     }
 
-    // CRIAR E ATUALIZAR: Envia dados para o servidor
-   async function salvarTecnico(event) {
+    // CRIAR E ATUALIZAR: Envia dados salvos para a API do Spring Boot
+    async function salvarTecnico(event) {
         event.preventDefault();
 
         const id = document.getElementById('tec-id').value;
+        const telefoneForm = document.getElementById('tec-tel').value;
+        
+        // Localiza dados do técnico caso seja uma edição para não perder campos cruciais
+        const tecnicoExistente = id ? equipe.find(t => t.id == id) : null;
+
         const payload = {
             nome: document.getElementById('tec-nome').value,
             especialidade: document.getElementById('tec-espec').value,
-            telefone: document.getElementById('tec-tel').value,
+            telefone: telefoneForm,
             status: document.getElementById('tec-status').value.toUpperCase(),
-            email: document.getElementById('tec-tel').value + "@tecnico.com"
+            // Preserva o e-mail se já existir, senão gera um padrão baseado no telefone
+            email: tecnicoExistente ? tecnicoExistente.email : (telefoneForm.replace(/\D/g, '') + "@tecnico.com")
         };
 
+        // Alinhamento das rotas do backend com parâmetros corretos (?empresa_id=)
         const url = id ? `${API_BASE_URL}/api/funcionarios/${id}` : `${API_BASE_URL}/api/funcionarios?empresa_id=${EMPRESA_ID}`;
         const metodo = id ? 'PUT' : 'POST';
-
-        // Pega o token limpo (igual você fez no painel de ordens)
-        let token = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || "";
-        token = token.replace(/^"|"$/g, '');
+        const token = obterToken();
 
         try {
             const response = await fetch(url, {
                 method: metodo,
                 headers: { 
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` // INJETANDO O TOKEN AQUI!
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(payload)
             });
@@ -269,14 +292,24 @@
                 fecharModal();
                 carregarEquipeDaAPI();
             } else {
-                alert("Erro 401: Token inválido ou expirado. Faça login novamente.");
+                if (response.status === 401 || response.status === 403) {
+                    alert("Sua sessão expirou ou você não tem permissão. Faça login novamente.");
+                } else {
+                    const errorMsg = await response.text();
+                    alert(`Erro do Servidor (${response.status}): ${errorMsg || 'Falha ao salvar operador.'}`);
+                }
             }
         } catch (error) {
             console.error("Falha na rede:", error);
+            alert("Não foi possível conectar ao servidor. Verifique sua conexão de rede.");
         }
     }
 
-    function editarTecnico(tec) {
+    // EDICAO: Preenche o formulário a partir do ID localizado no estado local
+    function editarTecnico(id) {
+        const tec = equipe.find(t => t.id === id);
+        if (!tec) return;
+
         document.getElementById('tec-id').value = tec.id;
         document.getElementById('tec-nome').value = tec.nome;
         document.getElementById('tec-espec').value = tec.especialidade || "";
@@ -287,28 +320,33 @@
         document.getElementById('modalTecnico').classList.add('active');
     }
 
-    // DELETAR: Remove do servidor
-   async function deletarTecnico(id) {
-        if (confirm("Deseja realmente remover este técnico?")) {
-            let token = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || "";
-            token = token.replace(/^"|"$/g, '');
+    // DELETAR: Remove do servidor via verbo DELETE
+    async function deletarTecnico(id) {
+        if (confirm("Deseja realmente remover este técnico de forma permanente?")) {
+            const token = obterToken();
 
             try {
                 const response = await fetch(`${API_BASE_URL}/api/funcionarios/${id}`, { 
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
+                
                 if (response.ok) {
                     carregarEquipeDaAPI();
+                } else {
+                    alert(`Não foi possível remover o operador. Código de erro: ${response.status}`);
                 }
             } catch (error) {
                 console.error("Falha ao deletar:", error);
+                alert("Erro de rede ao tentar remover.");
             }
         }
     }
 
-    // Execução primária ao renderizar a tela interna
-    carregarEquipeDaAPI();
-    </script>
+    // Inicialização primária ao carregar a tela
+    document.addEventListener("DOMContentLoaded", () => {
+        carregarEquipeDaAPI();
+    });
+</script>
 </body>
 </html>
