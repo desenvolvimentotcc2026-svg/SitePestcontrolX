@@ -61,7 +61,7 @@
         .actions-btn:hover { color: var(--primary); }
         .actions-btn.btn-del:hover { color: var(--danger); }
 
-        /* --- MODAL DA ARQUITETURA DE CADASTRO REAL --- */
+        /* --- MODAL --- */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -102,9 +102,40 @@
         .btn-cancel { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
         .btn-save { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
         .btn-save:hover { background: var(--primary-hover); }
+
+        /* --- TOAST NOTIFICATIONS (POP UPS) --- */
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            min-width: 250px;
+            padding: 16px 20px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(120%);
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        .toast.show { transform: translateX(0); }
+        .toast.success { background-color: var(--primary); }
+        .toast.error { background-color: var(--danger); }
+        .toast.warning { background-color: #f59e0b; color: #fff; }
     </style>
 </head>
 <body>
+
+    <div id="toast-container"></div>
 
     <div class="header-actions">
         <h2>Técnicos e Operadores</h2>
@@ -122,7 +153,7 @@
             </tr>
         </thead>
         <tbody id="tabela-equipe">
-            </tbody>
+        </tbody>
     </table>
 
     <div class="modal-overlay" id="modalTecnico">
@@ -136,6 +167,10 @@
                 <div class="form-group">
                     <label for="tec-nome">Nome Completo</label>
                     <input type="text" id="tec-nome" class="form-input" required placeholder="Ex: Carlos Silva">
+                </div>
+                <div class="form-group">
+                    <label for="tec-email">E-mail de Login do App</label>
+                    <input type="email" id="tec-email" class="form-input" required placeholder="Ex: tecnico@gmail.com">
                 </div>
                 <div class="form-group">
                     <label for="tec-espec">Especialidade / Foco</label>
@@ -160,14 +195,35 @@
             </form>
         </div>
     </div>
+
 <script>
-    // 🔄 Sincronização Automática com o barramento do Painel Pai (Light/Dark Mode e Contexto da Empresa)
+    // 🔔 FUNÇÃO PARA MOSTRAR OS POP-UPS (Substitui os alerts)
+    function mostrarToast(mensagem, tipo = 'success') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${tipo}`;
+        
+        let icone = tipo === 'success' ? '<i class="fa-solid fa-circle-check"></i>' : '<i class="fa-solid fa-circle-exclamation"></i>';
+        toast.innerHTML = `${icone} <span>${mensagem}</span>`;
+
+        container.appendChild(toast);
+
+        // Faz a animação de entrada
+        setTimeout(() => toast.classList.add('show'), 10);
+
+        // Remove depois de 3.5 segundos
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3500);
+    }
+
+    // 🔄 Sincronização Automática com o barramento do Painel Pai
     window.addEventListener('message', (event) => {
         if (event.data) {
             if (event.data.tipo === 'sincronizarTema') {
                 document.body.className = event.data.tema === 'dark' ? 'dark-theme' : '';
             }
-            // Se o painel pai injetar o ID da empresa dinamicamente via postMessage, guardamos na sessão
             if (event.data.tipo === 'definirEmpresa' && event.data.empresaId) {
                 localStorage.setItem("empresaId", event.data.empresaId);
                 carregarEquipeDaAPI();
@@ -175,28 +231,23 @@
         }
     });
 
-    // 🔗 DADOS DA API E SESSÃO
     const API_BASE_URL = "https://appdedetizacao.onrender.com";
     let equipe = [];
 
-    // ⚡ CAPTURA DINÂMICA: Retorna o ID da empresa ativa na sessão atual (sem travar valores fixos)
     function obterEmpresaId() {
         let id = localStorage.getItem("empresaId") || localStorage.getItem("id_empresa") || "";
         return id.toString().replace(/^"|"$/g, '').trim();
     }
 
-    // Função auxiliar para obter e limpar o token de autenticação
     function obterToken() {
         let token = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || "";
         return token.replace(/^"|"$/g, '');
     }
 
-    // LER: Busca técnicos do banco de dados e filtra pela empresa logada
     async function carregarEquipeDaAPI() {
         const token = obterToken();
         const empresaId = obterEmpresaId();
 
-        // Salvaguarda: impede requisições cegas se o usuário perdeu a sessão
         if (!empresaId) {
             console.warn("ID da empresa ausente no localStorage.");
             const tbody = document.getElementById("tabela-equipe");
@@ -211,13 +262,10 @@
             
             if (response.ok) {
                 const todosFuncionarios = await response.json();
-                
-                // Filtra os funcionários garantindo correspondência dinâmica com a empresa logada
                 equipe = todosFuncionarios.filter(tec => 
                     tec.empresa_id == empresaId || 
                     (tec.empresa && tec.empresa.id == empresaId)
                 );
-                
                 renderizarEquipe();
             } else {
                 console.error("Erro ao carregar funcionários do servidor:", response.status);
@@ -227,7 +275,6 @@
         }
     }
 
-    // RENDERIZAR: Atualiza de forma segura a tabela na tela
     function renderizarEquipe() {
         const tbody = document.getElementById("tabela-equipe");
         tbody.innerHTML = "";
@@ -262,42 +309,40 @@
     }
 
     function abrirModal() {
-    document.getElementById('form-tecnico').reset();
-    document.getElementById('tec-id').value = '';
-    document.getElementById('tec-email').value = ''; 
-    document.getElementById('modal-titulo').innerText = "Cadastrar Novo Operador";
-    document.getElementById('modalTecnico').classList.add('active');
-}
+        document.getElementById('form-tecnico').reset();
+        document.getElementById('tec-id').value = '';
+        document.getElementById('tec-email').value = ''; // AGORA VAI FUNCIONAR POIS O HTML EXISTE!
+        document.getElementById('modal-titulo').innerText = "Cadastrar Novo Operador";
+        document.getElementById('modalTecnico').classList.add('active');
+    }
 
     function fecharModal() {
         document.getElementById('modalTecnico').classList.remove('active');
     }
 
-    // CRIAR E ATUALIZAR: Envia dados salvos para a API do Spring Boot
     async function salvarTecnico(event) {
-    event.preventDefault();
+        event.preventDefault();
 
-    const id = document.getElementById('tec-id').value;
-    const telefoneForm = document.getElementById('tec-tel').value;
-    const emailForm = document.getElementById('tec-email').value;
-    const empresaId = obterEmpresaId();
+        const id = document.getElementById('tec-id').value;
+        const telefoneForm = document.getElementById('tec-tel').value;
+        const emailForm = document.getElementById('tec-email').value;
+        const empresaId = obterEmpresaId();
 
-    if (!empresaId) {
-        alert("Erro crítico: Não foi possível identificar a sua empresa na sessão. Faça login novamente.");
-        return;
-    }
+        if (!empresaId) {
+            mostrarToast("Sessão inválida. Faça login novamente.", "error");
+            return;
+        }
 
-    const payload = {
-        nome: document.getElementById('tec-nome').value,
-        cargo: document.getElementById('tec-espec').value, 
-        telefone: telefoneForm,
-        status: document.getElementById('tec-status').value.toUpperCase(),
-        ativo: true, 
-        cpf: "00000000000", 
-        email: emailForm 
-    };
+        const payload = {
+            nome: document.getElementById('tec-nome').value,
+            cargo: document.getElementById('tec-espec').value, 
+            telefone: telefoneForm,
+            status: document.getElementById('tec-status').value.toUpperCase(),
+            ativo: true, 
+            cpf: "00000000000", 
+            email: emailForm 
+        };
 
-        // Montagem dinâmica da URL injetando o ID extraído da sessão logada
         const url = id ? `${API_BASE_URL}/api/funcionarios/${id}` : `${API_BASE_URL}/api/funcionarios?empresa_id=${empresaId}`;
         const metodo = id ? 'PUT' : 'POST';
         const token = obterToken();
@@ -315,38 +360,37 @@
             if (response.ok) {
                 fecharModal();
                 carregarEquipeDaAPI();
+                mostrarToast(id ? "Técnico atualizado com sucesso!" : "Técnico cadastrado com sucesso!", "success");
             } else {
                 if (response.status === 401 || response.status === 403) {
-                    alert("Sua sessão expirou ou você não tem permissão. Faça login novamente.");
+                    mostrarToast("Sua sessão expirou. Faça login novamente.", "error");
                 } else {
-                    const errorMsg = await response.text();
-                    alert(`Erro do Servidor (${response.status}): ${errorMsg || 'Erro na validação dos dados com o banco.'}`);
+                    mostrarToast(`Erro do Servidor (${response.status}). Verifique os dados.`, "error");
                 }
             }
         } catch (error) {
             console.error("Falha na rede:", error);
-            alert("Não foi possível conectar ao servidor. Verifique sua conexão de rede.");
+            mostrarToast("Não foi possível conectar ao servidor. Verifique sua internet.", "error");
         }
     }
 
-    // EDICAO: Preenche o formulário a partir do ID localizado no estado local
     function editarTecnico(id) {
-    const tec = equipe.find(t => t.id === id);
-    if (!tec) return;
+        const tec = equipe.find(t => t.id === id);
+        if (!tec) return;
 
-    document.getElementById('tec-id').value = tec.id;
-    document.getElementById('tec-nome').value = tec.nome;
-    document.getElementById('tec-espec').value = tec.cargo || "";
-    document.getElementById('tec-tel').value = tec.telefone || "";
-    document.getElementById('tec-email').value = tec.email || ""; 
-    document.getElementById('tec-status').value = tec.status ? tec.status.toLowerCase() : "inativo";
+        document.getElementById('tec-id').value = tec.id;
+        document.getElementById('tec-nome').value = tec.nome;
+        document.getElementById('tec-espec').value = tec.cargo || "";
+        document.getElementById('tec-tel').value = tec.telefone || "";
+        document.getElementById('tec-email').value = tec.email || ""; 
+        document.getElementById('tec-status').value = tec.status ? tec.status.toLowerCase() : "inativo";
 
-    document.getElementById('modal-titulo').innerText = "Editar Credenciais";
-    document.getElementById('modalTecnico').classList.add('active');
-}
+        document.getElementById('modal-titulo').innerText = "Editar Credenciais";
+        document.getElementById('modalTecnico').classList.add('active');
+    }
 
-    // DELETAR: Remove do servidor via verbo DELETE
     async function deletarTecnico(id) {
+        // Para ações de exclusão, mantemos o confirm padrão por segurança antes de chamar a API
         if (confirm("Deseja realmente remover este técnico de forma permanente?")) {
             const token = obterToken();
 
@@ -358,17 +402,17 @@
                 
                 if (response.ok) {
                     carregarEquipeDaAPI();
+                    mostrarToast("Técnico removido com sucesso!", "success");
                 } else {
-                    alert(`Não foi possível remover o operador. Código de erro: ${response.status}`);
+                    mostrarToast(`Erro ao remover. Código: ${response.status}`, "error");
                 }
             } catch (error) {
                 console.error("Falha ao deletar:", error);
-                alert("Erro de rede ao tentar remover.");
+                mostrarToast("Erro de rede ao tentar remover.", "error");
             }
         }
     }
 
-    // Inicialização primária ao carregar a tela
     document.addEventListener("DOMContentLoaded", () => {
         carregarEquipeDaAPI();
     });
