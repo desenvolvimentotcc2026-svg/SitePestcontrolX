@@ -38,6 +38,18 @@ function obterTokenAutomatico() {
     return tokenBruto;
 }
 
+function obterEmpresaId() {
+    let idEmpresaBruto = localStorage.getItem("empresaId") || "";
+    let idEmpresa = idEmpresaBruto.replace(/^"|"$/g, '').trim();
+    
+    // 🔥 TRAVA DE SEGURANÇA PARA APRESENTAÇÃO PÚBLICA (BUGTECH FALLBACK)
+    if (!idEmpresa || idEmpresa === "null" || idEmpresa === "0") {
+        console.warn("⚠️ Empresa não identificada na sessão. Redirecionando dados para BugTech (ID 3)");
+        idEmpresa = "3";
+    }
+    return idEmpresa;
+}
+
 function atualizarContadores() {
     if (!Array.isArray(listaCompletaOrdens)) return;
 
@@ -84,13 +96,7 @@ async function carregarSolicitacoes() {
          return;
     }
 
-    let idEmpresaBruto = localStorage.getItem("empresaId") || "";
-    const idEmpresa = idEmpresaBruto.replace(/^"|"$/g, '').trim(); 
-
-    if (!idEmpresa || idEmpresa === "null" || idEmpresa === "0") {
-        container.innerHTML = `<div class="text-center py-8 text-yellow-500 text-xs font-bold">⚠️ Conta de Empresa não identificada. Por favor, refaça o login.</div>`;
-        return;
-    }
+    const idEmpresa = obterEmpresaId();
 
     try {
         const endpointUrl = `${API_BASE_URL}/api/ordens/empresa/${idEmpresa}`;
@@ -117,10 +123,9 @@ async function carregarSolicitacoes() {
 
 function conectarCanalNotificacoesGerais() {
     const token = obterTokenAutomatico();
-    let idEmpresaBruto = localStorage.getItem("empresaId") || "";
-    const idEmpresa = idEmpresaBruto.replace(/^"|"$/g, '').trim();
+    const idEmpresa = obterEmpresaId();
 
-    if (!idEmpresa || idEmpresa === "null" || idEmpresa === "0" || !token) return;
+    if (!token) return;
 
     const socket = new SockJS(`${API_BASE_URL}/ws-pestcontrol-sockjs`);
     notificationClient = Stomp.over(socket);
@@ -158,15 +163,20 @@ function renderizarListaFiltrada() {
     ordensFiltradas.forEach((ordem) => {
         const statusOS = String(ordem.status || "PENDENTE").toUpperCase();
         
+        // 🟢 MAPEAMENTO DA IDENTIDADE DO CLIENTE (Múltiplos Casos)
         let nomeClienteReal = "Cliente Não Informado";
-        if (ordem.cliente && typeof ordem.cliente === 'object') {
-            nomeClienteReal = ordem.cliente.nome || "Anônimo";
+        if (ordem.cliente) {
+            if (typeof ordem.cliente === 'object') {
+                nomeClienteReal = ordem.cliente.nome || "Anônimo";
+            } else if (typeof ordem.cliente === 'string') {
+                nomeClienteReal = ordem.cliente;
+            }
         } else if (ordem.nomeCliente) {
             nomeClienteReal = ordem.nomeCliente;
         }
 
         const praga = ordem.pragaAlvo || ordem.praga || 'Vistoria Geral';
-        const descricao = ordem.descricao || ordem.restricoes || 'Sem detalhes';
+        const descricao = ordem.descricao || ordem.restricoes || 'Sem detalhes fornecidos';
 
         let statusBadge = '';
         let acaoBtn = '';
@@ -179,7 +189,7 @@ function renderizarListaFiltrada() {
         } else {
             statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-[#3DDC84]/10 text-[#3DDC84] border border-[#3DDC84]/50 shadow-[0_0_8px_rgba(61,220,132,0.5)]">EM OPERAÇÃO</span>`;
             acaoBtn = `<button onclick="conectarRastreamento(${ordem.id})" class="mt-3 w-full bg-[#3DDC84] hover:bg-[#2eb369] text-black font-bold text-[11px] py-2 px-3 rounded shadow-[0_0_15px_rgba(61,220,132,0.3)]">🛰️ MONITORAR EQUIPE</button>`;
-            bordaNeon = 'border border-[#3DDC84]/30 shadow-[0_0_10px_rgba(61,220,132,0.1)]'; // Trazendo o Cyber-Industrial
+            bordaNeon = 'border border-[#3DDC84]/30 shadow-[0_0_10px_rgba(61,220,132,0.1)]';
         }
 
         const card = document.createElement("div");
@@ -206,17 +216,22 @@ function visualizarEMontarOrdem(idOrdem) {
     if (!detalheContainer) return;
     
     let clienteIdParaEnvio = 0;
-    let nomeParaUrl = "Desconhecido";
+    let nomeRealExibicao = "Cliente Não Informado";
     
-    if (ordem.cliente && typeof ordem.cliente === 'object') {
-        clienteIdParaEnvio = ordem.cliente.id || 0;
-        nomeParaUrl = encodeURIComponent(ordem.cliente.nome || "Cliente N/A");
-    } else {
+    if (ordem.cliente) {
+        if (typeof ordem.cliente === 'object') {
+            clienteIdParaEnvio = ordem.cliente.id || 0;
+            nomeRealExibicao = ordem.cliente.nome || "Cliente N/A";
+        } else if (typeof ordem.cliente === 'string') {
+            clienteIdParaEnvio = ordem.clienteId || 0;
+            nomeRealExibicao = ordem.cliente;
+        }
+    } else if (ordem.nomeCliente) {
+        nomeRealExibicao = ordem.nomeCliente;
         clienteIdParaEnvio = ordem.clienteId || 0;
-        nomeParaUrl = encodeURIComponent(ordem.nomeCliente || "Cliente N/A");
     }
 
-    // 🟢 CORREÇÃO: Pegando o endereço real que veio da ordem para mandar pro Formulario
+    const nomeParaUrl = encodeURIComponent(nomeRealExibicao);
     const enderecoCodificado = encodeURIComponent(ordem.endereco || "");
     const praga = ordem.pragaAlvo || ordem.praga || 'N/A';
     const descricao = ordem.descricao || ordem.restricoes || 'N/A';
@@ -226,7 +241,7 @@ function visualizarEMontarOrdem(idOrdem) {
         <div class="border border-[#3DDC84]/50 bg-[#161b22] p-5 rounded-lg text-white mt-2 shadow-[0_0_15px_rgba(61,220,132,0.15)]">
             <h2 class="text-xs font-bold text-[#3DDC84] mb-3 uppercase tracking-widest border-b border-[#21262d] pb-2">Detalhes Operacionais - #${ordem.id}</h2>
             <div class="flex flex-col gap-2 text-xs mb-5 mt-3">
-                <p><b class="text-gray-500">Solicitante:</b> ${decodeURIComponent(nomeParaUrl)}</p>
+                <p><b class="text-gray-500">Solicitante:</b> ${nomeRealExibicao}</p>
                 <p><b class="text-gray-500">Localização:</b> ${ordem.endereco || 'Não preenchida'}</p>
                 <p><b class="text-gray-500">Ameaça Biológica:</b> <span class="text-red-400 font-bold">${praga}</span></p>
                 <p><b class="text-gray-500">Relato:</b> ${descricao}</p>
@@ -235,21 +250,13 @@ function visualizarEMontarOrdem(idOrdem) {
             </div>
             
             <button onclick="abrirFormularioOrdem(${clienteIdParaEnvio}, '${nomeParaUrl}', ${ordem.id}, '${enderecoCodificado}')" class="w-full bg-[#3DDC84] hover:bg-[#2eb369] text-black font-bold py-2.5 rounded text-xs transition uppercase tracking-wider shadow-[0_0_10px_rgba(61,220,132,0.3)]">
-                ⚡ Despachar Equipe Técnico
+                ⚡ Despachar Equipe Técnica
             </button>
         </div>`;
 }
 
-// 🟢 CORREÇÃO: Adicionado o parâmetro do endereço na URL de navegação
 window.abrirFormularioOrdem = function(clienteId, nomeCodificado, ordemId, enderecoCodificado) {
-    const idEmpresaBruto = localStorage.getItem("empresaId") || "";
-    const idEmpresa = idEmpresaBruto.replace(/^"|"$/g, '').trim();
-    
-    if (!idEmpresa || idEmpresa === "null" || idEmpresa === "0") {
-        alert("Erro crítico: Código identificador da Empresa ausente. Faça login novamente.");
-        return;
-    }
-    
+    const idEmpresa = obterEmpresaId();
     const url = `form-ordem.html?clienteId=${clienteId}&empresaId=${idEmpresa}&nomeCliente=${nomeCodificado}&ordemId=${ordemId}&endereco=${enderecoCodificado}`;
     window.location.href = url;
 }
@@ -277,6 +284,7 @@ function abrirCanalWebSocket(idOrdem) {
     
     const socket = new SockJS(`${API_BASE_URL}/ws-pestcontrol-sockjs`);
     stompClient = Stomp.over(socket);
+    stompClient.debug = null;
 
     const token = obterTokenAutomatico();
     stompClient.connect({ "Authorization": `Bearer ${token}` }, function (frame) {
@@ -295,7 +303,6 @@ function abrirCanalWebSocket(idOrdem) {
 }
 
 function atualizarPosicaoMapa(lat, lng, idOrdem) {
-    // 🟢 CORREÇÃO CRÍTICA DO MAPA MUNDI: Ignora sinais sujos/zerados antes do GPS de fato pegar sinal
     if (!map || !lat || !lng || (lat === 0.0 && lng === 0.0)) {
         console.warn("Aguardando satélite real (GPS do técnico enviou 0.0)...");
         return; 
@@ -305,7 +312,11 @@ function atualizarPosicaoMapa(lat, lng, idOrdem) {
     routeCoordinates.push(coordenadas);
     if (routePath) routePath.setLatLngs(routeCoordinates);
 
-    const radarIcon = L.divIcon({ className: 'custom-gps-marker', html: '<span class="gps-pulse-icon" style="background:#3DDC84;box-shadow:0 0 10px #3DDC84;display:block;width:14px;height:14px;border-radius:50%;"></span>', iconSize: [14, 14] });
+    const radarIcon = L.divIcon({ 
+        className: 'custom-gps-marker', 
+        html: '<span class="gps-pulse-icon" style="background:#3DDC84;box-shadow:0 0 10px #3DDC84;display:block;width:14px;height:14px;border-radius:50%;"></span>', 
+        iconSize: [14, 14] 
+    });
     
     if (currentMarker) {
         currentMarker.setLatLng(coordenadas);

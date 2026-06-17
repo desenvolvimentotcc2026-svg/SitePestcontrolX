@@ -53,7 +53,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
             switch(e.target.value) {
                 case "BARATA":
-                    recomendacao = "Indico formulações em gel para áreas sensíveis e pulverização líquida (Cipermetrina) em frestas.";
+                    recomendacao = "Indico formulações em gel para áreas sensíveis and pulverização líquida (Cipermetrina) em frestas.";
                     epi = "Luvas nitrílicas, máscara semi-facial e óculos de proteção.";
                     break;
                 case "ROEDOR":
@@ -113,14 +113,11 @@ document.addEventListener("DOMContentLoaded", function() {
         const compl = document.getElementById("complemento") ? document.getElementById("complemento").value : "";
         let enderecoFinal = enderecoDigitado + (num ? `, ${num}` : "") + (compl ? ` - ${compl}` : "");
 
+        // 🔥 CORREÇÃO 1: Payload ajustado exatamente com a estrutura da sua classe Java OrdemDeServico
         const payload = {
             clienteId: parseInt(document.getElementById("clienteId").value),
             empresaId: parseInt(document.getElementById("empresaId").value),
-            nomeCliente: document.getElementById("nomeCliente").value,
-            cliente: { 
-                id: parseInt(document.getElementById("clienteId").value), 
-                nome: document.getElementById("nomeCliente").value 
-            },
+            cliente: document.getElementById("nomeCliente").value, // String direta mapeando com o backend
             endereco: enderecoFinal,
             pragaAlvo: pragaSelecionada,
             descricao: document.getElementById("descricao").value,
@@ -154,7 +151,17 @@ document.addEventListener("DOMContentLoaded", function() {
                     background: '#161b22', color: '#3DDC84',
                     didOpen: () => { Swal.showLoading(); }
                 }).then(() => {
-                    window.location.href = `agenda.html?ordemId=${idParaAgenda}&status=ABERTA&empresaId=${payload.empresaId}`; 
+                    // 🔥 CORREÇÃO 2: PASSANDO A ORDEM COMPLETA NA URL PARA A TELA DE AGENDA
+                    window.location.href = `agenda.html?ordemId=${idParaAgenda}` +
+                        `&status=ABERTA` +
+                        `&empresaId=${payload.empresaId}` +
+                        `&clienteId=${payload.clienteId}` +
+                        `&nomeCliente=${encodeURIComponent(payload.cliente)}` +
+                        `&endereco=${encodeURIComponent(payload.endereco)}` +
+                        `&pragaAlvo=${encodeURIComponent(payload.pragaAlvo)}` +
+                        `&descricao=${encodeURIComponent(payload.descricao)}` +
+                        `&restricoes=${encodeURIComponent(payload.restricoes)}` +
+                        `&cuidados=${encodeURIComponent(payload.cuidados)}`; 
                 });
             } else {
                 throw new Error(`Erro ${response.status}`);
