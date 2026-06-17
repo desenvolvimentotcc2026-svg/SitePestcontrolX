@@ -27,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
     carregarClientes();
 });
 
+
 // BUSCA OS CLIENTES DA API E PREENCHE O MENU LATERAL
 async function carregarClientes() {
     try {
@@ -34,10 +35,11 @@ async function carregarClientes() {
             headers: { 'Authorization': 'Bearer ' + tokenAuth }
         });
         
+        const listaContatos = document.getElementById('lista-contatos');
+        listaContatos.innerHTML = '';
+        
         if (res.ok) {
             const clientes = await res.json();
-            const listaContatos = document.getElementById('lista-contatos');
-            listaContatos.innerHTML = '';
             
             if (clientes.length === 0) {
                 listaContatos.innerHTML = `<div class="text-xs text-center text-gray-500 mt-4">Nenhum cliente cadastrado.</div>`;
@@ -53,8 +55,13 @@ async function carregarClientes() {
                 `;
             });
             
-            if (clientes.length > 0) {
-                selecionarCliente(clientes[0].id, clientes[0].nome ? clientes[0].nome : `Cliente #${clientes[0].id}`);
+            const clienteDaniel = clientes.find(c => c.id === 1);
+            
+            if (clienteDaniel) {
+                selecionarCliente(1, clienteDaniel.nome || 'Daniel Aristides');
+            } else if (clientes.length > 0) {
+                // Se por acaso o 1 não vier, seleciona o primeiro que aparecer pra não ficar vazio
+                selecionarCliente(clientes[0].id, clientes[0].nome || `Cliente #${clientes[0].id}`);
             }
         }
     } catch (e) {
