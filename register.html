@@ -243,6 +243,7 @@
         </div>
 
         <form id="registerForm">
+            <!-- Passo 1 -->
             <div id="step1" class="step active">
                 <div class="form-grid">
                     <div class="input-group full">
@@ -282,6 +283,7 @@
                 <button type="button" class="btn-primary" onclick="nextStep()">Próximo Passo →</button>
             </div>
 
+            <!-- Passo 2 -->
             <div id="step2" class="step">
                 <div class="form-grid">
                     <div class="input-group full">
@@ -311,20 +313,21 @@
     </div>
 
     <script>
-        // 🌒 Leitura e sincronização automática de tema com as páginas anteriores
+        // 🌒 Leitura e sincronização de tema
         if (localStorage.getItem('theme') === 'dark') {
             document.documentElement.setAttribute('data-theme', 'dark');
         }
 
         const alertBox = document.getElementById("alertBox");
 
+        // Bug corrigido aqui: removido o "mensaje ||" que quebrava o script
         function exibirAlerta(mensagem, tipo = 'error') {
             alertBox.className = `alert-box alert-${tipo}`;
-            alertBox.textContent = mensaje || mensagem;
+            alertBox.textContent = mensagem;
             alertBox.style.display = "block";
         }
 
-        // 📊 Navegação Limpa entre Passos
+        // 📊 Navegação entre Passos
         function nextStep() {
             const tipo = document.getElementById('tipo').value;
             const nome = document.getElementById('nome').value;
@@ -354,7 +357,7 @@
             const lblCnpj = document.getElementById('lblCnpj');
             const inputCnpj = document.getElementById('cnpj');
             
-            inputCnpj.value = ""; // Limpa máscara anterior
+            inputCnpj.value = ""; 
             
             if (tipo === 'EMPRESA') {
                 cnpjGroup.style.display = 'block';
@@ -369,7 +372,7 @@
             }
         }
 
-        // 🛡️ Máscaras de Digitação Inteligentes
+        // 🛡️ Máscaras de Digitação
         document.getElementById("cep").addEventListener("input", function (e) {
             let x = e.target.value.replace(/\D/g, '').match(/(\d{0,5})(\d{0,3})/);
             e.target.value = !x[2] ? x[1] : x[1] + '-' + x[2];
@@ -378,7 +381,7 @@
         document.getElementById("cnpj").addEventListener("input", function (e) {
             const tipo = document.getElementById('tipo').value;
             if (tipo === 'FUNCIONARIO') {
-                e.target.value = e.target.value.replace(/\D/g, ''); // Permite só ID numérico
+                e.target.value = e.target.value.replace(/\D/g, ''); 
                 return;
             }
             let v = e.target.value.replace(/\D/g, "");
@@ -390,7 +393,7 @@
             e.target.value = v;
         });
 
-        // 📡 Tratamento Assíncrono do CEP e Envio de Dados do Formulário
+        // 📡 Tratamento Assíncrono do CEP e Envio
         document.addEventListener("DOMContentLoaded", () => {
             const form = document.getElementById("registerForm");
             const cepInput = document.getElementById("cep");
@@ -400,7 +403,7 @@
             
             const BASE_URL = "https://appdedetizacao.onrender.com";
 
-            // Integração ViaCEP
+            // ViaCEP
             cepInput.addEventListener("blur", () => {
                 let cep = cepInput.value.replace(/\D/g, '');
                 if (cep.length === 8) {
@@ -423,7 +426,7 @@
                 }
             });
 
-            // Post de Cadastro
+            // Envio do Formulário
             form.addEventListener("submit", async (e) => {
                 e.preventDefault(); 
                 alertBox.style.display = "none";
