@@ -4,7 +4,7 @@ const BACKEND_BASE = 'https://appdedetizacao.onrender.com';
 const RENDER_URL = `${BACKEND_BASE}/ws-pestcontrol-sockjs`; 
 
 const tokenAuth = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || "";
-let empresaId = localStorage.getItem("empresaId") || "3"; // Fallback para BugTech
+let empresaId = localStorage.getItem("empresaId") || "3";
 let clienteIdAtivo = null;
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -53,7 +53,6 @@ async function carregarClientes() {
                 `;
             });
             
-            // Auto-seleciona o primeiro
             if (clientes.length > 0) {
                 selecionarCliente(clientes[0].id, clientes[0].nome ? clientes[0].nome : `Cliente #${clientes[0].id}`);
             }
@@ -64,11 +63,10 @@ async function carregarClientes() {
 }
 
 function selecionarCliente(id, nome) {
-    if (clienteIdAtivo === id) return; // Evita recarregar se já estiver selecionado
+    if (clienteIdAtivo === id) return;
 
     clienteIdAtivo = id;
     
-    // Atualiza o visual
     document.querySelectorAll('.channel-item').forEach(el => el.classList.remove('active'));
     const elAtivo = document.getElementById(`contato-${id}`);
     if (elAtivo) elAtivo.classList.add('active');
@@ -76,30 +74,26 @@ function selecionarCliente(id, nome) {
     const nomeEl = document.getElementById('chat-user-name');
     if (nomeEl) nomeEl.innerText = nome;
     
-    // Libera os inputs
     document.getElementById('msg').disabled = false;
     document.getElementById('btn-transmitir').disabled = false;
 
-    // Limpa a tela
     document.getElementById('chat-window').innerHTML = '';
     
-    // Conecta ou apenas atualiza a subscrição
     conectarSocket();
 }
 
 function conectarSocket() {
     if (!clienteIdAtivo) return;
 
-    // Se já estiver conectado, apenas muda o canal (subscrição)
     if (stompClient && stompClient.connected) {
         atualizarStatusSocket();
         return;
     }
 
-    // Caso contrário, inicia conexão
-    var socket = new SockJS(RENDER_URL);
+    // 🟢 CORREÇÃO: Token na URL para passar pelo Filtro JWT do Spring Boot
+    var socket = new SockJS(RENDER_URL + "?token=" + tokenAuth);
     stompClient = Stomp.over(socket);
-    stompClient.debug = null; // Remove logs no console
+    stompClient.debug = null; 
 
     const headers = { 'Authorization': 'Bearer ' + tokenAuth };
 
@@ -112,7 +106,6 @@ function conectarSocket() {
             status.innerText = "DESCONECTADO";
             status.style.color = "#ef4444";
         }
-        // Tentativa de reconexão automática
         setTimeout(conectarSocket, 5000); 
     });
 }
@@ -124,18 +117,19 @@ function atualizarStatusSocket() {
         statusElement.style.color = "#22c55e";
     }
     
-    // Desinscreve do canal anterior
     if (currentSubscription) {
         currentSubscription.unsubscribe();
     }
     
-    // Carrega histórico antes de começar a ouvir em tempo real
     carregarHistoricoNoTerminal();
     
-    // Inscreve no novo canal
     currentSubscription = stompClient.subscribe(`/topic/chat/${empresaId}/${clienteIdAtivo}`, function (msg) {
         var dados = JSON.parse(msg.body);
-        renderizarMensagem(dados);
+        
+        // 🟢 PREVENÇÃO DE DUPLICIDADE: Se a msg for MINHA (EMPRESA), eu não pinto de novo (já pintei no 'enviar()')
+        if (dados.tipoRemetente !== 'EMPRESA') {
+            renderizarMensagem(dados);
+        }
     });
 }
 
@@ -173,7 +167,7 @@ function renderizarMensagem(dados) {
     msgRow.innerHTML = `<div class="bubble">${textoMsg}</div>`;
     
     win.appendChild(msgRow);
-    win.scrollTop = win.scrollHeight; // Auto-scroll para baixo
+    win.scrollTop = win.scrollHeight; 
 }
 
 function enviar() {
@@ -188,6 +182,12 @@ function enviar() {
             'clienteId': parseInt(clienteIdAtivo)
         });
         
+        // 🟢 PINTA NA TELA NA HORA, SEM ESPERAR O SERVIDOR DEVOLVER (Igual no Android)
+        renderizarMensagem({
+            conteudo: texto,
+            tipoRemetente: 'EMPRESA'
+        });
+
         stompClient.send(`/app/chat/${empresaId}/${clienteIdAtivo}`, {}, payload);
         input.value = '';
         input.focus();
