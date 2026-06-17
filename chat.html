@@ -38,6 +38,7 @@
             display: flex;
             flex-direction: column;
             transition: all 0.3s ease;
+            overflow: hidden; /* 🔥 TRAVA A TELA INTEIRA PARA NÃO DESCER */
         }
 
         .chat-container {
@@ -48,6 +49,7 @@
             border-radius: 12px;
             flex: 1;
             overflow: hidden;
+            min-height: 0; /* 🔥 OBRIGA O GRID A RESPEITAR O LIMITE DA TELA */
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
 
@@ -100,6 +102,7 @@
             display: flex;
             flex-direction: column;
             background: var(--bg-global);
+            min-height: 0; /* 🔥 IMPEDE O FLEXBOX DE VAZAR O LAYOUT */
         }
 
         .chat-header {
@@ -116,7 +119,7 @@
         #chat-window {
             flex: 1;
             padding: 20px;
-            overflow-y: auto;
+            overflow-y: auto; /* 🔥 GERA A ROLAGEM APENAS AQUI DENTRO */
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -184,6 +187,21 @@
 
         .btn-send:hover { background: var(--primary); opacity: 0.9; }
         .status-log { font-size: 12px; font-weight: 600; color: #eab308; }
+
+        /* 🔥 BARRA DE ROLAGEM (SCROLLBAR) CUSTOMIZADA PREMIUM */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
     </style>
 </head>
 <body>
@@ -222,7 +240,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
     <script src="js/chat.js"></script>
 </body>
 </html>
