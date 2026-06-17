@@ -319,6 +319,41 @@
         }
     }
 
+    // Função para disparar a ordem para o celular do técnico
+function transmitirParaTecnico(ordemId) {
+    const token = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH");
+    
+    Swal.fire({
+        title: 'Transmitir Rota?',
+        text: "Isso enviará a O.S. diretamente para o mapa do técnico em campo.",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Transmitir Agora',
+        background: '#161b22',
+        color: '#fff'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Faz um PUT para mudar o status para ATIVO
+            fetch(`https://appdedetizacao.onrender.com/api/ordens/${ordemId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ status: "ATIVO" }) // O backend precisa aceitar essa mudança de status
+            })
+            .then(res => {
+                if(res.ok) {
+                    Swal.fire('Transmitido!', 'O técnico recebeu a rota no mapa.', 'success');
+                    // O app Android (GpsActivity) vai detectar que a OS mudou de status via polling ou refresh
+                } else {
+                    Swal.fire('Erro', 'Falha ao transmitir.', 'error');
+                }
+            });
+        }
+    });
+}
+
     window.onload = () => {
         const inputData = document.getElementById('dataExecucao');
         if (inputData) {
