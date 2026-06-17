@@ -51,7 +51,6 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
 
-        /* Painel Lateral de Contatos */
         .channels-sidebar {
             background: var(--surface);
             border-right: 1px solid var(--border);
@@ -93,7 +92,6 @@
             color: var(--text-main);
         }
 
-        /* Área Principal da Conversa */
         .chat-main {
             display: flex;
             flex-direction: column;
@@ -120,7 +118,6 @@
             gap: 12px;
         }
 
-        /* Balões de Mensagem */
         .msg-row { display: flex; width: 100%; }
         .msg-row.me { justify-content: flex-end; }
         .msg-row.received { justify-content: flex-start; }
@@ -181,7 +178,7 @@
             transition: background 0.2s;
         }
 
-        .btn-send:hover { background: var(--primary-hover); }
+        .btn-send:hover { background: var(--primary); opacity: 0.9; }
         .status-log { font-size: 12px; font-weight: 600; color: #eab308; }
     </style>
 </head>
@@ -205,7 +202,7 @@
             </div>
 
             <div id="chat-window">
-                </div>
+            </div>
 
             <div class="input-area">
                 <input type="text" id="msg" class="chat-input" placeholder="Digite sua mensagem para o cliente...">
@@ -215,8 +212,7 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
-
-<script src="js/chat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script src="js/chat.js"></script>
 </body>
 </html>

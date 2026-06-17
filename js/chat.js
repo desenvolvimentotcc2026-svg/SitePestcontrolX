@@ -2,9 +2,12 @@ var stompClient = null;
 const BACKEND_BASE = 'https://appdedetizacao.onrender.com';
 const RENDER_URL = `${BACKEND_BASE}/ws-pestcontrol-sockjs`; 
 
-const tokenAuth = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH");
-const empresaId = localStorage.getItem("empresaId") || "1"; 
-const clienteId = localStorage.getItem("clienteId") || "34"; // ID padrão do cliente de teste
+const tokenAuth = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || "";
+let empresaId = localStorage.getItem("empresaId"); 
+if (!empresaId || empresaId === "null" || empresaId === "0") empresaId = "3"; // Fallback BugTech
+
+let clienteId = localStorage.getItem("clienteId");
+if (!clienteId || clienteId === "null" || clienteId === "0") clienteId = "34"; // Fallback Cliente
 
 document.addEventListener("DOMContentLoaded", () => {
     if (localStorage.getItem('theme') === 'dark') {
@@ -76,9 +79,10 @@ function renderizarMensagem(dados) {
     const win = document.getElementById('chat-window');
     if (!win) return;
 
-    const ehMinha = dados.remetente === 'EMPRESA';
+    // 🔥 Sincronia perfeita com o Backend e Android
+    const ehMinha = dados.tipoRemetente === 'EMPRESA';
     const classeBubble = ehMinha ? 'me' : 'received';
-    const textoMsg = dados.texto || dados.conteudo || "";
+    const textoMsg = dados.conteudo || "";
 
     if(!textoMsg) return;
 
@@ -95,12 +99,13 @@ function enviar() {
     var texto = input.value.trim();
     
     if (texto !== "" && stompClient && stompClient.connected) {
+        //  Payload Unificado
         var payload = JSON.stringify({
-            'remetente': 'EMPRESA',
-            'texto': texto,
+            'tipoRemetente': 'EMPRESA',
             'conteudo': texto,
             'empresaId': parseInt(empresaId),
-            'clienteId': parseInt(clienteId)
+            'clienteId': parseInt(clienteId),
+            'remetenteId': parseInt(empresaId)
         });
         
         stompClient.send(`/app/chat/${empresaId}/${clienteId}`, {}, payload);
