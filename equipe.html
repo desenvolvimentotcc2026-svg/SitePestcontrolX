@@ -262,11 +262,12 @@
     }
 
     function abrirModal() {
-        document.getElementById('form-tecnico').reset();
-        document.getElementById('tec-id').value = '';
-        document.getElementById('modal-titulo').innerText = "Cadastrar Novo Operador";
-        document.getElementById('modalTecnico').classList.add('active');
-    }
+    document.getElementById('form-tecnico').reset();
+    document.getElementById('tec-id').value = '';
+    document.getElementById('tec-email').value = ''; 
+    document.getElementById('modal-titulo').innerText = "Cadastrar Novo Operador";
+    document.getElementById('modalTecnico').classList.add('active');
+}
 
     function fecharModal() {
         document.getElementById('modalTecnico').classList.remove('active');
@@ -274,29 +275,27 @@
 
     // CRIAR E ATUALIZAR: Envia dados salvos para a API do Spring Boot
     async function salvarTecnico(event) {
-        event.preventDefault();
+    event.preventDefault();
 
-        const id = document.getElementById('tec-id').value;
-        const telefoneForm = document.getElementById('tec-tel').value;
-        const empresaId = obterEmpresaId();
+    const id = document.getElementById('tec-id').value;
+    const telefoneForm = document.getElementById('tec-tel').value;
+    const emailForm = document.getElementById('tec-email').value;
+    const empresaId = obterEmpresaId();
 
-        // Validação de segurança no Front para evitar disparar 404 no Spring Boot
-        if (!empresaId) {
-            alert("Erro crítico: Não foi possível identificar a sua empresa na sessão. Faça login novamente.");
-            return;
-        }
-        
-        const tecnicoExistente = id ? equipe.find(t => t.id == id) : null;
+    if (!empresaId) {
+        alert("Erro crítico: Não foi possível identificar a sua empresa na sessão. Faça login novamente.");
+        return;
+    }
 
-        const payload = {
-            nome: document.getElementById('tec-nome').value,
-            cargo: document.getElementById('tec-espec').value, 
-            telefone: telefoneForm,
-            status: document.getElementById('tec-status').value.toUpperCase(),
-            ativo: true, 
-            cpf: "00000000000", 
-            email: tecnicoExistente ? tecnicoExistente.email : (telefoneForm.replace(/\D/g, '') + "@tecnico.com")
-        };
+    const payload = {
+        nome: document.getElementById('tec-nome').value,
+        cargo: document.getElementById('tec-espec').value, 
+        telefone: telefoneForm,
+        status: document.getElementById('tec-status').value.toUpperCase(),
+        ativo: true, 
+        cpf: "00000000000", 
+        email: emailForm 
+    };
 
         // Montagem dinâmica da URL injetando o ID extraído da sessão logada
         const url = id ? `${API_BASE_URL}/api/funcionarios/${id}` : `${API_BASE_URL}/api/funcionarios?empresa_id=${empresaId}`;
@@ -332,18 +331,19 @@
 
     // EDICAO: Preenche o formulário a partir do ID localizado no estado local
     function editarTecnico(id) {
-        const tec = equipe.find(t => t.id === id);
-        if (!tec) return;
+    const tec = equipe.find(t => t.id === id);
+    if (!tec) return;
 
-        document.getElementById('tec-id').value = tec.id;
-        document.getElementById('tec-nome').value = tec.nome;
-        document.getElementById('tec-espec').value = tec.cargo || "";
-        document.getElementById('tec-tel').value = tec.telefone || "";
-        document.getElementById('tec-status').value = tec.status ? tec.status.toLowerCase() : "inativo";
+    document.getElementById('tec-id').value = tec.id;
+    document.getElementById('tec-nome').value = tec.nome;
+    document.getElementById('tec-espec').value = tec.cargo || "";
+    document.getElementById('tec-tel').value = tec.telefone || "";
+    document.getElementById('tec-email').value = tec.email || ""; 
+    document.getElementById('tec-status').value = tec.status ? tec.status.toLowerCase() : "inativo";
 
-        document.getElementById('modal-titulo').innerText = "Editar Credenciais";
-        document.getElementById('modalTecnico').classList.add('active');
-    }
+    document.getElementById('modal-titulo').innerText = "Editar Credenciais";
+    document.getElementById('modalTecnico').classList.add('active');
+}
 
     // DELETAR: Remove do servidor via verbo DELETE
     async function deletarTecnico(id) {
