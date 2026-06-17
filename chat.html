@@ -57,6 +57,7 @@
             display: flex;
             flex-direction: column;
             padding: 15px;
+            overflow-y: auto;
         }
 
         .sidebar-title {
@@ -66,6 +67,8 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
         }
 
         .channel-item {
@@ -85,6 +88,7 @@
         .channel-item.active {
             background: rgba(22, 163, 74, 0.1);
             color: var(--primary);
+            border-left: 3px solid var(--primary);
         }
 
         .channel-item:hover:not(.active) {
@@ -107,7 +111,7 @@
             align-items: center;
         }
 
-        .chat-user-title { font-size: 15px; font-weight: 700; }
+        .chat-user-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px;}
 
         #chat-window {
             flex: 1;
@@ -186,27 +190,32 @@
 
     <div class="chat-container">
         <div class="channels-sidebar">
-            <div class="sidebar-title">Canais Ativos</div>
-            <div class="channel-item active"><i class="fa-solid fa-headset"></i> Suporte ao Cliente</div>
-            <div class="channel-item" onclick="alert('Módulo de rádio frequência com campo em pareamento.')">
-                <i class="fa-solid fa-truck-field"></i> Técnico em Campo
+            <div class="sidebar-title">Contatos (Clientes)</div>
+            <div id="lista-contatos">
+                <div class="text-xs text-center text-gray-500 mt-4">Sincronizando clientes...</div>
             </div>
         </div>
 
         <div class="chat-main">
             <div class="chat-header">
                 <div>
-                    <div class="chat-user-title"><i class="fa-solid fa-circle text-emerald-500 text-[10px]"></i> Canal de Atendimento Direto</div>
+                    <div class="chat-user-title">
+                        <i class="fa-solid fa-circle text-emerald-500 text-[10px]"></i> 
+                        <span id="chat-user-name">Selecione um Cliente</span>
+                    </div>
                 </div>
-                <div id="status-chat" class="status-log">Conectando...</div>
+                <div id="status-chat" class="status-log">Aguardando Seleção...</div>
             </div>
 
             <div id="chat-window">
+                <p style="text-align: center; color: var(--text-muted); font-size: 13px; margin-top: 40px;">
+                    Selecione um contato ao lado para iniciar a transmissão.
+                </p>
             </div>
 
             <div class="input-area">
-                <input type="text" id="msg" class="chat-input" placeholder="Digite sua mensagem para o cliente...">
-                <button id="btn-transmitir" class="btn-send"><i class="fa-solid fa-paper-plane"></i> ENVIAR</button>
+                <input type="text" id="msg" class="chat-input" placeholder="Digite sua mensagem para o cliente..." disabled>
+                <button id="btn-transmitir" class="btn-send" disabled><i class="fa-solid fa-paper-plane"></i> ENVIAR</button>
             </div>
         </div>
     </div>
