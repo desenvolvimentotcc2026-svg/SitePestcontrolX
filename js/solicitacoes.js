@@ -5,6 +5,7 @@ let listaCompletaOrdens = [];
 let filtroStatusAtual = 'TODAS';
 let routePath = null; 
 let routeCoordinates = [];
+let trackingIdAtual = null; // 💡 Guarda a OS que está sendo monitorada ativamente no mapa
 
 function initMap() {
     console.log("🗺️ [MAPA] Inicializando contêiner do Leaflet...");
@@ -17,20 +18,15 @@ function initMap() {
             attribution: '&copy; CARTO', subdomains: 'abcd', maxZoom: 20
         }).addTo(map);
 
-        // Estética Neon no rastro do GPS
         routePath = L.polyline([], {
             color: '#3DDC84', weight: 4, opacity: 0.8, lineJoin: 'round', className: 'neon-route'
         }).addTo(map);
-        
-    } catch (error) {
-        console.error("🚨 [ERRO MAPA]:", error);
-    }
+    } catch (error) { console.error("🚨 [ERRO MAPA]:", error); }
 }
 
 function obterTokenAutomatico() {
     let tokenBruto = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || "";
     if (!tokenBruto) return null;
-    
     tokenBruto = tokenBruto.replace(/^"|"$/g, '').trim(); 
     if (tokenBruto.toLowerCase().startsWith("bearer ")) {
         tokenBruto = tokenBruto.substring(7).trim();
@@ -41,20 +37,13 @@ function obterTokenAutomatico() {
 function obterEmpresaId() {
     let idEmpresaBruto = localStorage.getItem("empresaId") || "";
     let idEmpresa = idEmpresaBruto.replace(/^"|"$/g, '').trim();
-    
-    // 🔥 TRAVA DE SEGURANÇA PARA APRESENTAÇÃO PÚBLICA (BUGTECH FALLBACK)
-    if (!idEmpresa || idEmpresa === "null" || idEmpresa === "0") {
-        console.warn("⚠️ Empresa não identificada na sessão. Redirecionando dados para BugTech (ID 3)");
-        idEmpresa = "3";
-    }
+    if (!idEmpresa || idEmpresa === "null" || idEmpresa === "0") idEmpresa = "3";
     return idEmpresa;
 }
 
 function atualizarContadores() {
     if (!Array.isArray(listaCompletaOrdens)) return;
-
-    let pendentes = 0;
-    let andamento = 0;
+    let pendentes = 0, andamento = 0;
 
     listaCompletaOrdens.forEach((ordem) => {
         const status = String(ordem.status || "PENDENTE").toUpperCase();
@@ -62,16 +51,12 @@ function atualizarContadores() {
         if (status === 'ACEITA' || status === 'EM_ROTA' || status === 'EM_ANDAMENTO') andamento++;
     });
 
-    const elPendente = document.getElementById("counter-pendente");
-    const elAndamento = document.getElementById("counter-andamento");
-
-    if (elPendente) elPendente.innerText = pendentes;
-    if (elAndamento) elAndamento.innerText = andamento;
+    if (document.getElementById("counter-pendente")) document.getElementById("counter-pendente").innerText = pendentes;
+    if (document.getElementById("counter-andamento")) document.getElementById("counter-andamento").innerText = andamento;
 }
 
 function filtrarLista(status) {
     filtroStatusAtual = status;
-
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.classList.remove('bg-[#21262d]', 'text-white', 'border-[#3DDC84]', 'shadow-[0_0_10px_rgba(61,220,132,0.3)]');
         btn.classList.add('bg-[#0d1117]', 'text-gray-400', 'border-[#21262d]');
@@ -82,7 +67,6 @@ function filtrarLista(status) {
         btnClicado.classList.remove('bg-[#0d1117]', 'text-gray-400', 'border-[#21262d]');
         btnClicado.classList.add('bg-[#21262d]', 'text-white', 'border-[#3DDC84]', 'shadow-[0_0_10px_rgba(61,220,132,0.3)]');
     }
-
     renderizarListaFiltrada();
 }
 
@@ -90,63 +74,68 @@ async function carregarSolicitacoes() {
     const token = obterTokenAutomatico();
     const container = document.getElementById("lista-solicitacoes");
     
-    if (!container) return;
-    if (!token) {
-         container.innerHTML = `<div class="text-center py-8 text-red-400 text-xs font-bold">Sessão Expirada ou Não Iniciada. Faça o login.</div>`;
-         return;
-    }
+    if (!container || !token) return;
 
     const idEmpresa = obterEmpresaId();
 
     try {
-        const endpointUrl = `${API_BASE_URL}/api/ordens/empresa/${idEmpresa}`;
-        const response = await fetch(endpointUrl, {
-            method: "GET",
-            headers: {
-                "Authorization": `Bearer ${token}`, 
-                "Content-Type": "application/json"
-            }
+        const response = await fetch(`${API_BASE_URL}/api/ordens/empresa/${idEmpresa}`, {
+            method: "GET", headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }
         });
         
-        if (!response.ok) throw new Error(`Erro no servidor remoto (Código HTTP: ${response.status})`);
-
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         listaCompletaOrdens = data.content ? data.content : data;
         
         atualizarContadores();
         renderizarListaFiltrada();
-
-    } catch (error) {
-        container.innerHTML = `<div class="text-center py-6 text-red-400 text-xs font-bold">Falha ao puxar dados da empresa: ${error.message}</div>`;
-    }
+        
+        // 📡 [REDUNDÂNCIA DE GPS VIA HTTP]: Se houver uma OS monitorada e o WebSocket falhar,
+        // capturamos as coordenadas que vierem na requisição HTTP padrão e movemos o mapa!
+        if (trackingIdAtual) {
+            const ordemAtiva = listaCompletaOrdens.find(o => o.id === trackingIdAtual);
+            if (ordemAtiva) {
+                const latExibicao = ordemAtiva.latitude || ordemAtiva.lat;
+                const lngExibicao = ordemAtiva.longitude || ordemAtiva.lng;
+                if (latExibicao && lngExibicao && latExibicao !== 0.0 && lngExibicao !== 0.0) {
+                    console.log(`🛰️ [HTTP FALLBACK] Atualizando mapa para OS #${trackingIdAtual}: ${latExibicao}, ${lngExibicao}`);
+                    atualizarPosicaoMapa(latExibicao, lngExibicao);
+                }
+            }
+        }
+    } catch (error) { console.error("🚨 [ERRO AO CARREGAR OS]:", error); }
 }
 
 function conectarCanalNotificacoesGerais() {
     const token = obterTokenAutomatico();
     const idEmpresa = obterEmpresaId();
-
     if (!token) return;
 
-    const socket = new SockJS(`${API_BASE_URL}/ws-pestcontrol-sockjs`);
-    notificationClient = Stomp.over(socket);
-    notificationClient.debug = null; 
+    try {
+        const socket = new SockJS(`${API_BASE_URL}/ws-pestcontrol-sockjs`);
+        notificationClient = Stomp.over(socket);
+        
+        // Ativa logs no console do navegador para monitorar o handshake
+        notificationClient.debug = function(str) { console.log("📣 [WS GERAL]: " + str); }; 
 
-    notificationClient.connect({ "Authorization": `Bearer ${token}` }, function (frame) {
-        notificationClient.subscribe(`/topic/empresa/${idEmpresa}`, function (response) {
-            carregarSolicitacoes(); 
+        notificationClient.connect({ "Authorization": `Bearer ${token}` }, function (frame) {
+            console.log("🟢 Conectado ao canal de notificações da empresa: " + idEmpresa);
+            notificationClient.subscribe(`/topic/empresa/${idEmpresa}`, function () {
+                console.log("⚡ Nova atualização de OS capturada via WebSocket!");
+                carregarSolicitacoes(); 
+            });
+        }, function (error) {
+            console.warn("⚠️ WebSocket Geral instável. O Polling HTTP manterá a aplicação atualizada.");
         });
-    }, function (error) {});
+    } catch (e) {
+        console.error("🚨 Erro ao inicializar canal de notificações:", e);
+    }
 }
 
 function renderizarListaFiltrada() {
     const container = document.getElementById("lista-solicitacoes");
     if (!container) return;
     container.innerHTML = "";
-
-    if (!Array.isArray(listaCompletaOrdens) || listaCompletaOrdens.length === 0) {
-        container.innerHTML = `<p class="text-xs text-gray-500 text-center py-8 font-bold">Nenhuma solicitação de serviço pendente para a sua empresa.</p>`;
-        return;
-    }
 
     let ordensFiltradas = listaCompletaOrdens;
     if (filtroStatusAtual !== 'TODAS') {
@@ -163,32 +152,34 @@ function renderizarListaFiltrada() {
     ordensFiltradas.forEach((ordem) => {
         const statusOS = String(ordem.status || "PENDENTE").toUpperCase();
         
-        // 🟢 MAPEAMENTO DA IDENTIDADE DO CLIENTE (Múltiplos Casos)
         let nomeClienteReal = "Cliente Não Informado";
         if (ordem.cliente) {
-            if (typeof ordem.cliente === 'object') {
-                nomeClienteReal = ordem.cliente.nome || "Anônimo";
-            } else if (typeof ordem.cliente === 'string') {
-                nomeClienteReal = ordem.cliente;
-            }
+            nomeClienteReal = (typeof ordem.cliente === 'object') ? (ordem.cliente.nome || "Anônimo") : ordem.cliente;
         } else if (ordem.nomeCliente) {
             nomeClienteReal = ordem.nomeCliente;
         }
 
         const praga = ordem.pragaAlvo || ordem.praga || 'Vistoria Geral';
-        const descricao = ordem.descricao || ordem.restricoes || 'Sem detalhes fornecidos';
+        const descricao = ordem.descricao || ordem.restricoes || 'Sem detalhes';
 
-        let statusBadge = '';
-        let acaoBtn = '';
-        let bordaNeon = '';
+        let statusBadge = '', acaoBtn = '', bordaNeon = '';
 
         if (statusOS === 'PENDENTE' || statusOS === 'ABERTA' || statusOS === 'AGENDADA') {
             statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">A DESPACHAR</span>`;
             acaoBtn = `<button onclick="visualizarEMontarOrdem(${ordem.id})" class="mt-3 w-full bg-[#21262d] hover:border-yellow-500 border border-[#21262d] text-white font-bold text-[11px] py-2 px-3 rounded transition">🔍 AVALIAR OCORRÊNCIA</button>`;
             bordaNeon = 'border border-[#21262d]';
+        } else if (statusOS === 'FINALIZADA' || statusOS === 'CONCLUIDO') {
+            statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/50">FINALIZADA</span>`;
+            acaoBtn = `<button disabled class="mt-3 w-full bg-[#21262d] text-gray-500 font-bold text-[11px] py-2 px-3 rounded">✅ SERVIÇO CONCLUÍDO</button>`;
+            bordaNeon = 'border border-[#21262d]';
         } else {
+            // Se o monitoramento ativo atual for desta OS, destaca o botão dinamicamente
+            const estaMonitorando = trackingIdAtual === ordem.id;
+            const textoBotao = estaMonitorando ? "📡 MONITORANDO AGORA..." : "🛰️ MONITORAR EQUIPE";
+            const classeBotao = estaMonitorando ? "bg-[#2eb369] text-white" : "bg-[#3DDC84] hover:bg-[#2eb369] text-black";
+
             statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-[#3DDC84]/10 text-[#3DDC84] border border-[#3DDC84]/50 shadow-[0_0_8px_rgba(61,220,132,0.5)]">EM OPERAÇÃO</span>`;
-            acaoBtn = `<button onclick="conectarRastreamento(${ordem.id})" class="mt-3 w-full bg-[#3DDC84] hover:bg-[#2eb369] text-black font-bold text-[11px] py-2 px-3 rounded shadow-[0_0_15px_rgba(61,220,132,0.3)]">🛰️ MONITORAR EQUIPE</button>`;
+            acaoBtn = `<button onclick="conectarRastreamento(${ordem.id})" class="mt-3 w-full ${classeBotao} font-bold text-[11px] py-2 px-3 rounded shadow-[0_0_15px_rgba(61,220,132,0.3)]">${textoBotao}</button>`;
             bordaNeon = 'border border-[#3DDC84]/30 shadow-[0_0_10px_rgba(61,220,132,0.1)]';
         }
 
@@ -215,9 +206,7 @@ function visualizarEMontarOrdem(idOrdem) {
     const detalheContainer = document.getElementById("visualizador-os-completa");
     if (!detalheContainer) return;
     
-    let clienteIdParaEnvio = 0;
-    let nomeRealExibicao = "Cliente Não Informado";
-    
+    let clienteIdParaEnvio = 0, nomeRealExibicao = "Cliente Não Informado";
     if (ordem.cliente) {
         if (typeof ordem.cliente === 'object') {
             clienteIdParaEnvio = ordem.cliente.id || 0;
@@ -245,10 +234,8 @@ function visualizarEMontarOrdem(idOrdem) {
                 <p><b class="text-gray-500">Localização:</b> ${ordem.endereco || 'Não preenchida'}</p>
                 <p><b class="text-gray-500">Ameaça Biológica:</b> <span class="text-red-400 font-bold">${praga}</span></p>
                 <p><b class="text-gray-500">Relato:</b> ${descricao}</p>
-                ${ordem.cuidados ? `<p class="bg-yellow-500/10 text-yellow-500 p-2 rounded mt-1 border border-yellow-500/20"><b class="uppercase">⚠️ Cuidados:</b> ${ordem.cuidados}</p>` : ''}
                 ${imagemBase64}
             </div>
-            
             <button onclick="abrirFormularioOrdem(${clienteIdParaEnvio}, '${nomeParaUrl}', ${ordem.id}, '${enderecoCodificado}')" class="w-full bg-[#3DDC84] hover:bg-[#2eb369] text-black font-bold py-2.5 rounded text-xs transition uppercase tracking-wider shadow-[0_0_10px_rgba(61,220,132,0.3)]">
                 ⚡ Despachar Equipe Técnica
             </button>
@@ -257,22 +244,33 @@ function visualizarEMontarOrdem(idOrdem) {
 
 window.abrirFormularioOrdem = function(clienteId, nomeCodificado, ordemId, enderecoCodificado) {
     const idEmpresa = obterEmpresaId();
-    const url = `form-ordem.html?clienteId=${clienteId}&empresaId=${idEmpresa}&nomeCliente=${nomeCodificado}&ordemId=${ordemId}&endereco=${enderecoCodificado}`;
-    window.location.href = url;
+    window.location.href = `form-ordem.html?clienteId=${clienteId}&empresaId=${idEmpresa}&nomeCliente=${nomeCodificado}&ordemId=${ordemId}&endereco=${enderecoCodificado}`;
 }
 
 function conectarRastreamento(idOrdem) {
+    trackingIdAtual = idOrdem; // Atualiza globalmente para manter sincronismo
+    
     const trackingEl = document.getElementById("os-tracking-id");
     if (trackingEl) trackingEl.innerText = `[ OS #${idOrdem} ]`;
     
     routeCoordinates = [];
     if (routePath) routePath.setLatLngs([]);
 
-    if (stompClient && stompClient.connected) {
-        stompClient.disconnect(() => abrirCanalWebSocket(idOrdem));
-    } else {
-         abrirCanalWebSocket(idOrdem);
+    if (currentMarker) {
+        map.removeLayer(currentMarker);
+        currentMarker = null;
     }
+
+    renderizarListaFiltrada(); // Força atualização visual dos botões
+
+    // Reseta conexões antigas de forma limpa, evitando travar sockets
+    if (stompClient) {
+        try {
+            stompClient.disconnect();
+        } catch(e) { console.error("Erro ao limpar canal anterior:", e); }
+    }
+    
+    abrirCanalWebSocket(idOrdem);
 }
 
 function abrirCanalWebSocket(idOrdem) {
@@ -282,34 +280,54 @@ function abrirCanalWebSocket(idOrdem) {
         statusEl.className = "text-yellow-500 font-bold ml-1";
     }
     
-    const socket = new SockJS(`${API_BASE_URL}/ws-pestcontrol-sockjs`);
-    stompClient = Stomp.over(socket);
-    stompClient.debug = null;
+    try {
+        const socket = new SockJS(`${API_BASE_URL}/ws-pestcontrol-sockjs`);
+        stompClient = Stomp.over(socket);
+        stompClient.debug = function(str) { console.log("🛰️ [WS TELEMETRIA]: " + str); };
 
-    const token = obterTokenAutomatico();
-    stompClient.connect({ "Authorization": `Bearer ${token}` }, function (frame) {
-        if (statusEl) {
-            statusEl.innerText = "SINAL RECEBIDO";
-            statusEl.className = "text-[#3DDC84] font-bold ml-1 glow-text";
-        }
-        
-        stompClient.subscribe(`/topic/gps/${idOrdem}`, function (response) {
-            try {
-                const dadosGps = JSON.parse(response.body);
-                atualizarPosicaoMapa(dadosGps.latitude, dadosGps.longitude, idOrdem);
-            } catch (e) {}
+        const token = obterTokenAutomatico();
+        stompClient.connect({ "Authorization": `Bearer ${token}` }, function () {
+            if (statusEl) {
+                statusEl.innerText = "SINAL RECEBIDO";
+                statusEl.className = "text-[#3DDC84] font-bold ml-1 glow-text";
+            }
+            
+            stompClient.subscribe(`/topic/gps/${idOrdem}`, function (response) {
+                try {
+                    const dadosGps = JSON.parse(response.body);
+                    // 💡 [PARSING TOLERANTE]: Aceita tanto latitude/longitude quanto lat/lng vindos do Back!
+                    const lat = dadosGps.latitude || dadosGps.lat;
+                    const lng = dadosGps.longitude || dadosGps.lng;
+                    
+                    if (lat && lng) {
+                        atualizarPosicaoMapa(lat, lng);
+                    }
+                } catch (e) { console.error("Erro ao processar telemetria WS:", e); }
+            });
+        }, function (error) {
+            if (statusEl) {
+                statusEl.innerText = "VIA HTTP BACKUP";
+                statusEl.className = "text-orange-400 font-bold ml-1";
+            }
+            console.warn("⚠️ WebSocket de rastreamento caiu. Alternando para redundância HTTP automática.");
         });
-    }, function (error) {});
+    } catch(err) {
+        console.error("🚨 Falha ao instanciar canal WS de Rastreamento:", err);
+    }
 }
 
-function atualizarPosicaoMapa(lat, lng, idOrdem) {
-    if (!map || !lat || !lng || (lat === 0.0 && lng === 0.0)) {
-        console.warn("Aguardando satélite real (GPS do técnico enviou 0.0)...");
-        return; 
-    }
+function atualizarPosicaoMapa(lat, lng) {
+    if (!map || !lat || !lng || (lat === 0.0 && lng === 0.0)) return; 
     
     const coordenadas = [lat, lng];
-    routeCoordinates.push(coordenadas);
+    
+    // Evita duplicar coordenadas estáticas repetidas seguidas na polyline da rota
+    if (routeCoordinates.length === 0 || 
+        routeCoordinates[routeCoordinates.length - 1][0] !== lat || 
+        routeCoordinates[routeCoordinates.length - 1][1] !== lng) {
+        routeCoordinates.push(coordenadas);
+    }
+    
     if (routePath) routePath.setLatLngs(routeCoordinates);
 
     const radarIcon = L.divIcon({ 
@@ -318,11 +336,9 @@ function atualizarPosicaoMapa(lat, lng, idOrdem) {
         iconSize: [14, 14] 
     });
     
-    if (currentMarker) {
-        currentMarker.setLatLng(coordenadas);
-    } else {
-        currentMarker = L.marker(coordenadas, { icon: radarIcon }).addTo(map);
-    }
+    if (currentMarker) currentMarker.setLatLng(coordenadas);
+    else currentMarker = L.marker(coordenadas, { icon: radarIcon }).addTo(map);
+    
     map.flyTo(coordenadas, 16, { animate: true, duration: 1.0 });
 }
 
@@ -330,4 +346,12 @@ window.onload = () => {
     initMap(); 
     carregarSolicitacoes(); 
     conectarCanalNotificacoesGerais(); 
+    
+    // 🛡️ [MECANISMO DE DEFESA CRUCIAL CONTRA QUEDA DE WEBSOCKETS NO RENDER]
+    // Executa um Polling HTTP a cada 10 segundos como plano de fundo.
+    // Garante que o status da OS mude e que o GPS ande mesmo se a conexão WS fechar!
+    setInterval(() => {
+        console.log("🔄 [SINC] Atualizando dados via polling HTTP de segurança...");
+        carregarSolicitacoes();
+    }, 10000);
 };
