@@ -17,8 +17,9 @@ function initMap() {
             attribution: '&copy; CARTO', subdomains: 'abcd', maxZoom: 20
         }).addTo(map);
 
+        // Estética Neon no rastro do GPS
         routePath = L.polyline([], {
-            color: '#3DDC84', weight: 4, opacity: 0.8, lineJoin: 'round'
+            color: '#3DDC84', weight: 4, opacity: 0.8, lineJoin: 'round', className: 'neon-route'
         }).addTo(map);
         
     } catch (error) {
@@ -60,14 +61,14 @@ function filtrarLista(status) {
     filtroStatusAtual = status;
 
     document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.remove('bg-[#21262d]', 'text-white', 'border-[#3DDC84]');
+        btn.classList.remove('bg-[#21262d]', 'text-white', 'border-[#3DDC84]', 'shadow-[0_0_10px_rgba(61,220,132,0.3)]');
         btn.classList.add('bg-[#0d1117]', 'text-gray-400', 'border-[#21262d]');
     });
 
     const btnClicado = document.getElementById(`filter-${status}`);
     if (btnClicado) {
         btnClicado.classList.remove('bg-[#0d1117]', 'text-gray-400', 'border-[#21262d]');
-        btnClicado.classList.add('bg-[#21262d]', 'text-white', 'border-[#3DDC84]');
+        btnClicado.classList.add('bg-[#21262d]', 'text-white', 'border-[#3DDC84]', 'shadow-[0_0_10px_rgba(61,220,132,0.3)]');
     }
 
     renderizarListaFiltrada();
@@ -129,9 +130,7 @@ function conectarCanalNotificacoesGerais() {
         notificationClient.subscribe(`/topic/empresa/${idEmpresa}`, function (response) {
             carregarSolicitacoes(); 
         });
-    }, function (error) {
-        console.error("🚨 [WS NOTIFICAÇÃO] Falha na conexão de segundo plano:", error);
-    });
+    }, function (error) {});
 }
 
 function renderizarListaFiltrada() {
@@ -154,11 +153,6 @@ function renderizarListaFiltrada() {
         });
     }
 
-    if (ordensFiltradas.length === 0) {
-        container.innerHTML = `<p class="text-xs text-gray-500 text-center py-8">Nenhum registro encontrado para este filtro.</p>`;
-        return;
-    }
-
     ordensFiltradas.sort((a, b) => b.id - a.id);
 
     ordensFiltradas.forEach((ordem) => {
@@ -176,24 +170,27 @@ function renderizarListaFiltrada() {
 
         let statusBadge = '';
         let acaoBtn = '';
+        let bordaNeon = '';
 
         if (statusOS === 'PENDENTE' || statusOS === 'ABERTA' || statusOS === 'AGENDADA') {
             statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">A DESPACHAR</span>`;
             acaoBtn = `<button onclick="visualizarEMontarOrdem(${ordem.id})" class="mt-3 w-full bg-[#21262d] hover:border-yellow-500 border border-[#21262d] text-white font-bold text-[11px] py-2 px-3 rounded transition">🔍 AVALIAR OCORRÊNCIA</button>`;
+            bordaNeon = 'border border-[#21262d]';
         } else {
-            statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-[#3DDC84]/10 text-[#3DDC84] border border-[#3DDC84]/20">EM OPERAÇÃO</span>`;
+            statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] bg-[#3DDC84]/10 text-[#3DDC84] border border-[#3DDC84]/50 shadow-[0_0_8px_rgba(61,220,132,0.5)]">EM OPERAÇÃO</span>`;
             acaoBtn = `<button onclick="conectarRastreamento(${ordem.id})" class="mt-3 w-full bg-[#3DDC84] hover:bg-[#2eb369] text-black font-bold text-[11px] py-2 px-3 rounded shadow-[0_0_15px_rgba(61,220,132,0.3)]">🛰️ MONITORAR EQUIPE</button>`;
+            bordaNeon = 'border border-[#3DDC84]/30 shadow-[0_0_10px_rgba(61,220,132,0.1)]'; // Trazendo o Cyber-Industrial
         }
 
         const card = document.createElement("div");
-        card.className = `neon-border bg-[#0d1117] p-4 rounded-lg flex flex-col justify-between mb-3`;
+        card.className = `bg-[#0d1117] p-4 rounded-lg flex flex-col justify-between mb-3 ${bordaNeon}`;
         card.innerHTML = `
             <div class="flex justify-between items-start mb-2">
                 <span class="text-xs font-bold text-gray-500">REQ #${ordem.id || '00'}</span>
                 ${statusBadge}
             </div>
             <h3 class="text-white font-bold text-sm uppercase">${praga}</h3>
-            <p class="text-xs text-gray-400 mt-1.5"><b class="text-gray-500">Info:</b> ${descricao}</p>
+            <p class="text-xs text-gray-400 mt-1.5 truncate"><b class="text-gray-500">Info:</b> ${descricao}</p>
             <p class="text-xs text-gray-400 mt-0.5"><b class="text-gray-500">Alvo:</b> ${nomeClienteReal}</p>
             ${acaoBtn}
         `;
@@ -219,28 +216,32 @@ function visualizarEMontarOrdem(idOrdem) {
         nomeParaUrl = encodeURIComponent(ordem.nomeCliente || "Cliente N/A");
     }
 
+    // 🟢 CORREÇÃO: Pegando o endereço real que veio da ordem para mandar pro Formulario
+    const enderecoCodificado = encodeURIComponent(ordem.endereco || "");
     const praga = ordem.pragaAlvo || ordem.praga || 'N/A';
     const descricao = ordem.descricao || ordem.restricoes || 'N/A';
     const imagemBase64 = ordem.stringFotoBase64 ? `<img src="data:image/jpeg;base64,${ordem.stringFotoBase64}" class="w-full h-32 object-cover rounded mt-2 border border-[#21262d]">` : '';
 
     detalheContainer.innerHTML = `
-        <div class="border border-[#3DDC84]/30 bg-[#161b22] p-5 rounded-lg text-white mt-2 shadow-[0_0_10px_rgba(61,220,132,0.1)]">
+        <div class="border border-[#3DDC84]/50 bg-[#161b22] p-5 rounded-lg text-white mt-2 shadow-[0_0_15px_rgba(61,220,132,0.15)]">
             <h2 class="text-xs font-bold text-[#3DDC84] mb-3 uppercase tracking-widest border-b border-[#21262d] pb-2">Detalhes Operacionais - #${ordem.id}</h2>
             <div class="flex flex-col gap-2 text-xs mb-5 mt-3">
                 <p><b class="text-gray-500">Solicitante:</b> ${decodeURIComponent(nomeParaUrl)}</p>
+                <p><b class="text-gray-500">Localização:</b> ${ordem.endereco || 'Não preenchida'}</p>
                 <p><b class="text-gray-500">Ameaça Biológica:</b> <span class="text-red-400 font-bold">${praga}</span></p>
                 <p><b class="text-gray-500">Relato:</b> ${descricao}</p>
                 ${ordem.cuidados ? `<p class="bg-yellow-500/10 text-yellow-500 p-2 rounded mt-1 border border-yellow-500/20"><b class="uppercase">⚠️ Cuidados:</b> ${ordem.cuidados}</p>` : ''}
                 ${imagemBase64}
             </div>
             
-            <button onclick="abrirFormularioOrdem(${clienteIdParaEnvio}, '${nomeParaUrl}', ${ordem.id})" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded text-xs transition uppercase tracking-wider">
+            <button onclick="abrirFormularioOrdem(${clienteIdParaEnvio}, '${nomeParaUrl}', ${ordem.id}, '${enderecoCodificado}')" class="w-full bg-[#3DDC84] hover:bg-[#2eb369] text-black font-bold py-2.5 rounded text-xs transition uppercase tracking-wider shadow-[0_0_10px_rgba(61,220,132,0.3)]">
                 ⚡ Despachar Equipe Técnico
             </button>
         </div>`;
 }
 
-window.abrirFormularioOrdem = function(clienteId, nomeCodificado, ordemId) {
+// 🟢 CORREÇÃO: Adicionado o parâmetro do endereço na URL de navegação
+window.abrirFormularioOrdem = function(clienteId, nomeCodificado, ordemId, enderecoCodificado) {
     const idEmpresaBruto = localStorage.getItem("empresaId") || "";
     const idEmpresa = idEmpresaBruto.replace(/^"|"$/g, '').trim();
     
@@ -249,8 +250,7 @@ window.abrirFormularioOrdem = function(clienteId, nomeCodificado, ordemId) {
         return;
     }
     
-    // 🔥 INJETANDO O ID DA ORDEM NA URL
-    const url = `form-ordem.html?clienteId=${clienteId}&empresaId=${idEmpresa}&nomeCliente=${nomeCodificado}&ordemId=${ordemId}`;
+    const url = `form-ordem.html?clienteId=${clienteId}&empresaId=${idEmpresa}&nomeCliente=${nomeCodificado}&ordemId=${ordemId}&endereco=${enderecoCodificado}`;
     window.location.href = url;
 }
 
@@ -282,7 +282,7 @@ function abrirCanalWebSocket(idOrdem) {
     stompClient.connect({ "Authorization": `Bearer ${token}` }, function (frame) {
         if (statusEl) {
             statusEl.innerText = "SINAL RECEBIDO";
-            statusEl.className = "text-[#3DDC84] font-bold ml-1";
+            statusEl.className = "text-[#3DDC84] font-bold ml-1 glow-text";
         }
         
         stompClient.subscribe(`/topic/gps/${idOrdem}`, function (response) {
@@ -291,22 +291,21 @@ function abrirCanalWebSocket(idOrdem) {
                 atualizarPosicaoMapa(dadosGps.latitude, dadosGps.longitude, idOrdem);
             } catch (e) {}
         });
-    }, function (error) {
-        if (statusEl) {
-            statusEl.innerText = "FALHA / RECUSADO";
-            statusEl.className = "text-red-500 font-bold ml-1";
-        }
-    });
+    }, function (error) {});
 }
 
 function atualizarPosicaoMapa(lat, lng, idOrdem) {
-    if (!map) return;
+    // 🟢 CORREÇÃO CRÍTICA DO MAPA MUNDI: Ignora sinais sujos/zerados antes do GPS de fato pegar sinal
+    if (!map || !lat || !lng || (lat === 0.0 && lng === 0.0)) {
+        console.warn("Aguardando satélite real (GPS do técnico enviou 0.0)...");
+        return; 
+    }
     
     const coordenadas = [lat, lng];
     routeCoordinates.push(coordenadas);
     if (routePath) routePath.setLatLngs(routeCoordinates);
 
-    const radarIcon = L.divIcon({ className: 'custom-gps-marker', html: '<span class="gps-pulse-icon"></span>', iconSize: [14, 14] });
+    const radarIcon = L.divIcon({ className: 'custom-gps-marker', html: '<span class="gps-pulse-icon" style="background:#3DDC84;box-shadow:0 0 10px #3DDC84;display:block;width:14px;height:14px;border-radius:50%;"></span>', iconSize: [14, 14] });
     
     if (currentMarker) {
         currentMarker.setLatLng(coordenadas);

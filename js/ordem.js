@@ -6,10 +6,18 @@ document.addEventListener("DOMContentLoaded", function() {
     const empresaId = urlParams.get('empresaId') || "0";
     const ordemId = urlParams.get('ordemId'); 
     const nomeCliente = urlParams.get('nomeCliente') ? decodeURIComponent(urlParams.get('nomeCliente')) : "";
+    
+    // 🟢 CORREÇÃO: Captura o endereço exato enviado pela solicitação original
+    const enderecoCompletoUrl = urlParams.get('endereco') ? decodeURIComponent(urlParams.get('endereco')) : "";
 
     document.getElementById("clienteId").value = clienteId;
     document.getElementById("empresaId").value = empresaId;
     if(nomeCliente) document.getElementById("nomeCliente").value = nomeCliente;
+    
+    // Pré-preenche o endereço se o cliente já enviou via app!
+    if(enderecoCompletoUrl) {
+        document.getElementById("endereco").value = enderecoCompletoUrl;
+    }
 
     let fotoBase64 = null;
     document.getElementById('fotoUpload').addEventListener('change', function(e) {
@@ -51,9 +59,9 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 
         botMsg.innerHTML = `
-            <p><strong><i class="fa-solid fa-bolt"></i> Análise de Procedimento:</strong></p>
+            <p class="text-[#3DDC84]"><strong><i class="fa-solid fa-bolt"></i> Análise de Procedimento:</strong></p>
             <p style="margin-top: 8px;">${recomendacao}</p>
-            <div class="bot-hint">
+            <div class="bot-hint border-t border-[#21262d] mt-3 pt-2 text-gray-400">
                 <strong>🛡️ EPIs Obrigatórios para a Viatura:</strong><br>${epi}
             </div>
         `;
@@ -67,12 +75,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
         let token = localStorage.getItem("token") || localStorage.getItem("TOKEN_AUTH") || "";
         if (!token) {
-            // POP-UP PREMIUM: Erro de Autenticação
             Swal.fire({
-                icon: 'warning',
-                title: 'Acesso Negado',
-                text: 'Token JWT ausente na sessão. Volte ao dashboard para fazer login novamente.',
-                confirmButtonColor: '#2E7D32'
+                icon: 'warning', title: 'Acesso Negado',
+                text: 'Token JWT ausente na sessão. Volte ao dashboard.',
+                confirmButtonColor: '#3DDC84', background: '#161b22', color: '#fff'
             });
             btn.innerHTML = "SALVAR ORDEM";
             btn.disabled = false;
@@ -80,18 +86,27 @@ document.addEventListener("DOMContentLoaded", function() {
         }
         token = token.replace(/^"|"$/g, '').trim();
 
-        // PAYLOAD COMPLETO: Pronto para a Agenda do Técnico (App e Web)
+        const enderecoDigitado = document.getElementById("endereco").value;
+        const num = document.getElementById("numero") ? document.getElementById("numero").value : "";
+        const compl = document.getElementById("complemento") ? document.getElementById("complemento").value : "";
+        
+        let enderecoFinal = enderecoDigitado;
+        if(num) enderecoFinal += `, ${num}`;
+        if(compl) enderecoFinal += ` - ${compl}`;
+
+        // 🟢 CORREÇÃO CRÍTICA DO PAYLOAD: Resolvendo o "N/A" no banco
         const payload = {
             clienteId: parseInt(document.getElementById("clienteId").value),
             empresaId: parseInt(document.getElementById("empresaId").value),
-            cliente: document.getElementById("nomeCliente").value, 
-            endereco: `${document.getElementById("endereco").value}, ${document.getElementById("numero").value} - ${document.getElementById("complemento").value}`,
+            nomeCliente: document.getElementById("nomeCliente").value, // O Spring Boot puxa por esse nome!
+            cliente: { id: parseInt(document.getElementById("clienteId").value), nome: document.getElementById("nomeCliente").value }, // Objeto de contingência
+            endereco: enderecoFinal,
             pragaAlvo: document.getElementById("pragaAlvo").value,
             descricao: document.getElementById("descricao").value,
             restricoes: document.getElementById("restricoes").value,
             cuidados: document.getElementById("cuidados").value,
             stringFotoBase64: fotoBase64,
-            status: "ABERTA" // Status crucial para aparecer na lista de pendências da Agenda
+            status: "ABERTA" 
         };
 
         let endpoint = "https://appdedetizacao.onrender.com/api/ordens";
@@ -99,7 +114,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         if (ordemId) {
             endpoint = `https://appdedetizacao.onrender.com/api/ordens/${ordemId}`;
-            metodoHttp = "PUT"; // Requer o @PutMapping configurado no Spring Boot!
+            metodoHttp = "PUT";
         }
 
         fetch(endpoint, {
@@ -118,57 +133,31 @@ document.addEventListener("DOMContentLoaded", function() {
                     idParaAgenda = ordemGerada.id;
                 }
                 
-                // POP-UP PREMIUM: Sucesso e Redirecionamento Automático
                 Swal.fire({
-                    icon: 'success',
-                    title: 'O.S. Registrada!',
-                    text: 'Iniciando roteamento da equipe...',
-                    showConfirmButton: false,
-                    timer: 2500,
-                    timerProgressBar: true,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
+                    icon: 'success', title: 'O.S. Registrada!', text: 'Iniciando roteamento da equipe...',
+                    showConfirmButton: false, timer: 2500, timerProgressBar: true,
+                    background: '#161b22', color: '#3DDC84',
+                    didOpen: () => { Swal.showLoading(); }
                 }).then(() => {
-                    // Envia com as informações cruciais para a tela de agenda
                     window.location.href = `agenda.html?ordemId=${idParaAgenda}&status=ABERTA&empresaId=${payload.empresaId}`; 
                 });
 
             } else {
                 const erroMsg = await response.text();
-                console.error("Erro do servidor:", erroMsg);
-                
-                let textoErro = `Erro ao processar a ordem (Status ${response.status}).`;
-                if (response.status === 405) {
-                    textoErro = "Método não permitido (Erro 405). O servidor não suporta a edição desta O.S. no momento.";
-                }
-
-                // POP-UP PREMIUM: Erro do Servidor
                 Swal.fire({
-                    icon: 'error',
-                    title: 'Falha no Servidor',
-                    text: textoErro,
-                    confirmButtonColor: '#d33'
+                    icon: 'error', title: 'Falha no Servidor', text: `Erro ${response.status}`, confirmButtonColor: '#d33', background: '#161b22', color: '#fff'
                 });
-
                 btn.innerHTML = "<i class='fa-solid fa-satellite-dish'></i> TENTAR NOVAMENTE";
                 btn.disabled = false;
             }
         })
         .catch(err => {
-            // POP-UP PREMIUM: Erro de Rede / Internet
-            Swal.fire({
-                icon: 'error',
-                title: 'Sem Conexão',
-                text: 'Falha crítica de rede externa. Verifique sua internet.',
-                confirmButtonColor: '#d33'
-            });
+            Swal.fire({ icon: 'error', title: 'Sem Conexão', text: 'Falha de rede.', confirmButtonColor: '#d33', background: '#161b22', color: '#fff' });
             btn.innerHTML = "<i class='fa-solid fa-satellite-dish'></i> TENTAR NOVAMENTE";
             btn.disabled = false;
         });
     });
 
-    // Função de CEP mantida intacta
     window.buscarEnderecoPorCEP = function(cep) {
         const cepLimpo = cep.replace(/\D/g, ''); 
         if (cepLimpo.length === 8) {
@@ -177,7 +166,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 .then(data => {
                     if (!data.erro) {
                         document.getElementById("endereco").value = `${data.logradouro}, ${data.bairro} - ${data.localidade}/${data.uf}`;
-                        document.getElementById("numero").focus(); 
+                        if(document.getElementById("numero")) document.getElementById("numero").focus(); 
                     }
                 })
         }
